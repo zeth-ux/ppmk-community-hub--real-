@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ac0024;
+  --color-primary-container: #d12438;
+  --color-secondary: #465f88;
+  --color-background: #f8f8f8;
+}
+
+:root {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f8f8f8;
+}
