@@ -113,6 +113,8 @@ export function friendlyError(error: unknown): string {
     return "You don't have permission to do that."
   if (message.includes('profiles_student_id_key'))
     return 'That student ID is already registered to another account.'
+  if (message.includes('permission denied for'))
+    return 'The server refused this action (database permissions). Please tell the EMSU tech team.'
   if (message.includes('row-level security'))
     return 'This action is not allowed. The RSVP may be closed, or your profile may be incomplete.'
   if (message.includes('rate limit') || message.includes('over_email_send_rate_limit'))

@@ -1,18 +1,23 @@
 """Permission tests for supabase/migrations/0001_init.sql against a local
 Postgres that imitates Supabase (auth.users, auth.uid(), anon/authenticated)."""
-import subprocess, sys, uuid
+import glob, os, subprocess, sys, uuid
 import psycopg2
 
-DSN = dict(host="/home/claude/pgtest", port=5499, user="postgres")
-MIGRATION = "/home/claude/app/supabase/migrations/0001_init.sql"
+DSN = dict(host=os.environ.get("PGHOST", "/home/claude/pgtest"), port=int(os.environ.get("PGPORT", 5499)), user="postgres")
+MIGRATIONS = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "migrations", "*.sql")))
+# MODE=new  -> Supabase 2026 behaviour: no automatic table grants
+# MODE=old  -> older projects: automatic grants to anon/authenticated
+MODE = os.environ.get("MODE", "new")
 
-subprocess.run(["psql", "-h", DSN["host"], "-p", "5499", "-U", "postgres", "-qc", "drop database if exists hub"], check=True)
-subprocess.run(["psql", "-h", DSN["host"], "-p", "5499", "-U", "postgres", "-qc", "create database hub"], check=True)
-for f in ["/home/claude/pgtest/mock_supabase.sql", MIGRATION]:
-    r = subprocess.run(["psql", "-h", DSN["host"], "-p", "5499", "-U", "postgres", "-d", "hub", "-q", "-v", "ON_ERROR_STOP=1", "-f", f], capture_output=True, text=True)
+subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", "drop database if exists hub"], check=True)
+subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", "create database hub"], check=True)
+mock = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mock_supabase.sql")
+extra = [] if MODE == "new" else [os.path.join(os.path.dirname(os.path.abspath(__file__)), "mock_old_default_grants.sql")]
+for f in [mock, *extra, *MIGRATIONS]:
+    r = subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-d", "hub", "-q", "-v", "ON_ERROR_STOP=1", "-f", f], capture_output=True, text=True)
     if r.returncode:
         print(r.stderr); sys.exit("migration failed")
-print("migration applied cleanly")
+print(f"migrations applied cleanly (mode={MODE}): {[os.path.basename(m) for m in MIGRATIONS]}")
 
 conn = psycopg2.connect(dbname="hub", **DSN)
 conn.autocommit = True
@@ -59,6 +64,8 @@ run("update profiles set role='admin' where id=%s", role=None, args=(A,))  # boo
 
 check("signup trigger created 5 profiles", run("select count(*) from profiles", role=None)[0][0] == 5)
 check("S1 completes own profile", complete(S1, "2024001", 2024) == 1)
+r = run("update profiles set phone='010-9999-0000' where id=auth.uid() returning id, full_name, role", S1)
+check("profile update with RETURNING works (what the app sends)", r == [(S1, "Student 2024001", "student")], r)
 check("S2 completes own profile", complete(S2, "2025001", 2025) == 1)
 complete(A, "2023001", 2023); complete(O, "2023002", 2023)
 

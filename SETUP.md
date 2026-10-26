@@ -5,11 +5,16 @@ Everything here is on free plans. Nothing costs money.
 ## 1. Create the database tables
 
 1. Open your Supabase project → **SQL Editor** → **New query**.
-2. Open `supabase/migrations/0001_init.sql` from this repo, copy **all** of it, paste, click **Run**.
+2. Run every file in `supabase/migrations/` **in number order**, each one in a new query:
+   copy **all** of the file, paste, click **Run**.
+   - `0001_init.sql`: tables and permission rules (run once only)
+   - `0002_explicit_grants.sql`: table access for the app (needed on Supabase projects
+     created in 2026; safe to run again)
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 
-> Run it only once. If it fails halfway, tell Claude the error message.
+> Whenever a new numbered file appears in `supabase/migrations/`, run just that new file.
+> If one fails, tell Claude the error message.
 
 ## 2. Connect the app to Supabase
 
