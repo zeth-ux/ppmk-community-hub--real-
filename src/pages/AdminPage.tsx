@@ -4,6 +4,7 @@ import { Pencil, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import {
   deleteClub,
+  getAiUsageStats,
   getHubStats,
   listAllProfiles,
   listClubs,
@@ -41,6 +42,7 @@ export default function AdminPage() {
 
 function StatsSection() {
   const { data, loading, error } = useLoader(getHubStats, [])
+  const { data: ai } = useLoader(() => getAiUsageStats().catch(() => []), [])
 
   if (loading) return <Spinner />
   if (error) return <ErrorBox>{error}</ErrorBox>
@@ -56,15 +58,32 @@ function StatsSection() {
     ['Check-ins', data.check_ins],
   ] as const
 
+  const aiLabel = { extract: 'AI event fills', announce: 'AI announcements', ask: 'Chatbot questions' }
+
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-      {tiles.map(([label, value]) => (
-        <div key={label} className={`${card} p-4`}>
-          <p className="text-xs font-semibold text-slate-500">{label}</p>
-          <p className="mt-1 text-2xl font-bold">{value}</p>
-        </div>
-      ))}
-    </section>
+    <div className="space-y-3">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+        {tiles.map(([label, value]) => (
+          <div key={label} className={`${card} p-4`}>
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="mt-1 text-2xl font-bold">{value}</p>
+          </div>
+        ))}
+      </section>
+      {ai && ai.length > 0 && (
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {ai.map((row) => (
+            <div key={row.kind} className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
+              <p className="text-xs font-semibold text-violet-700">{aiLabel[row.kind]}</p>
+              <p className="mt-1 text-2xl font-bold">{row.total}</p>
+              <p className="text-xs text-slate-500">
+                {row.last_7_days} this week · {row.people} {row.people === 1 ? 'person' : 'people'}
+              </p>
+            </div>
+          ))}
+        </section>
+      )}
+    </div>
   )
 }
 

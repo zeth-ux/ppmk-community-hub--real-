@@ -100,6 +100,7 @@ export default function OrganizerPage() {
                 key={selected.id}
                 event={selected}
                 onEdit={() => go({ event: selected.id, edit: '1' })}
+                onChanged={() => void reload()}
                 onDeleted={async () => {
                   await reload()
                   go({})

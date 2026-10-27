@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Check,
-  Copy,
   Download,
   ExternalLink,
   Pencil,
@@ -21,7 +19,8 @@ import {
 } from '../../lib/format'
 import type { Attendee, HubEvent, RsvpStatus } from '../../lib/types'
 import { useLoader } from '../../lib/useLoader'
-import { ErrorBox, Spinner, buttonPrimary, buttonSecondary, card } from '../ui'
+import { ErrorBox, Spinner, buttonSecondary, card } from '../ui'
+import SharePanel from './SharePanel'
 
 type Filter = 'all' | RsvpStatus
 
@@ -65,10 +64,12 @@ export default function EventManagePanel({
   event,
   onEdit,
   onDeleted,
+  onChanged,
 }: {
   event: HubEvent
   onEdit: () => void
   onDeleted: () => void
+  onChanged: () => void
 }) {
   const { data: attendees, setData, loading, error } = useLoader(
     () => listAttendees(event.id),
@@ -77,9 +78,6 @@ export default function EventManagePanel({
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [actionError, setActionError] = useState('')
-  const [copied, setCopied] = useState<'link' | 'text' | null>(null)
-
-  const link = `${window.location.origin}/events/${event.id}`
 
   const counts = useMemo(() => {
     const rows = attendees ?? []
@@ -102,23 +100,6 @@ export default function EventManagePanel({
           (a.student_id ?? '').toLowerCase().includes(q)),
     )
   }, [attendees, filter, search])
-
-  const announcement = [
-    `📢 ${event.title}`,
-    `🗓 ${formatDate(event.event_date, 'long')}, ${eventTimeRange(event)}`,
-    `📍 ${event.location}`,
-    ...(event.bring ? [`🎒 Bring: ${event.bring}`] : []),
-    ...(event.description ? ['', event.description] : []),
-    '',
-    `RSVP in one tap (by ${formatDate(rsvpDeadline(event))}):`,
-    link,
-  ].join('\n')
-
-  async function copy(kind: 'link' | 'text') {
-    await navigator.clipboard.writeText(kind === 'link' ? link : announcement)
-    setCopied(kind)
-    window.setTimeout(() => setCopied(null), 2000)
-  }
 
   async function toggleCheckIn(attendee: Attendee) {
     setActionError('')
@@ -190,28 +171,7 @@ export default function EventManagePanel({
         </div>
       </section>
 
-      <section className={`${card} p-5 sm:p-6`}>
-        <h3 className="font-bold">Share it</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Paste this into the KakaoTalk / WhatsApp group. Students tap the link
-          and RSVP. No form needed.
-        </p>
-        <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 font-sans text-sm leading-6 text-slate-700">
-          {announcement}
-        </pre>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button onClick={() => void copy('text')} className={buttonPrimary}>
-            {copied === 'text' ? <Check size={16} /> : <Copy size={16} />}
-            {copied === 'text' ? 'Copied!' : 'Copy announcement'}
-          </button>
-          <button onClick={() => void copy('link')} className={buttonSecondary}>
-            {copied === 'link' ? 'Copied!' : 'Copy link only'}
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-slate-400">
-          Coming soon: AI writes this in English, Malay and Korean.
-        </p>
-      </section>
+      <SharePanel event={event} onSaved={onChanged} />
 
       <section className={`${card} p-5 sm:p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -3,6 +3,8 @@
 // security work.
 import { supabase } from './supabase'
 import type {
+  AiUsageRow,
+  Announcements,
   AppRole,
   Attendee,
   Club,
@@ -97,6 +99,13 @@ export async function updateEvent(
     .single()
 
   return must(result) as HubEvent
+}
+
+export async function saveAnnouncements(
+  id: string,
+  announcements: Announcements | null,
+): Promise<void> {
+  must(await supabase.from('events').update({ announcements }).eq('id', id))
 }
 
 export async function deleteEvent(id: string): Promise<void> {
@@ -199,6 +208,10 @@ export async function setUserRole(userId: string, role: AppRole) {
 export async function getHubStats(): Promise<HubStats> {
   const rows = must(await supabase.rpc('hub_stats')) as HubStats[]
   return rows[0]
+}
+
+export async function getAiUsageStats(): Promise<AiUsageRow[]> {
+  return must(await supabase.rpc('ai_usage_stats')) as AiUsageRow[]
 }
 
 // ---------- Clubs ----------

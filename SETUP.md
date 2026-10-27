@@ -10,6 +10,7 @@ Everything here is on free plans. Nothing costs money.
    - `0001_init.sql`: tables and permission rules (run once only)
    - `0002_explicit_grants.sql`: table access for the app (needed on Supabase projects
      created in 2026; safe to run again)
+   - `0003_ai.sql`: AI daily limits + saved AI announcements
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 
@@ -80,7 +81,32 @@ npm run dev
 
 Open http://localhost:5173.
 
-## 6. Before the pilot (week 10)
+## 6. Turn on the AI features
+
+1. Get a free key: https://aistudio.google.com → **Get API key** → **Create API key**.
+   Treat it like a password: never paste it in chat, code, or anything starting with `VITE_`.
+2. **Vercel** → Settings → Environment Variables → add `GEMINI_API_KEY` = your key → Save →
+   Deployments → ⋯ → **Redeploy**.
+3. **Local** (optional, for `npm run dev` and the test set): add this line to `.env.local`:
+   ```
+   GEMINI_API_KEY=your-key
+   ```
+4. Optional: choose the model with `GEMINI_MODEL` (default `gemini-3.5-flash-lite`).
+   Other options: `gemini-3.8-flash`, or the open-source `gemma-4-26b-a4b-it`.
+
+Each organizer can use each AI feature 40 times a day (see `0003_ai.sql`).
+
+### Run the AI test set (for the report)
+
+```bash
+npm run ai:eval -- gemini-3.5-flash-lite gemma-4-26b-a4b-it
+```
+
+It scores each model on 24 real-style notes (English, Malay, Korean, slang, traps) and
+6 announcements, and saves a Markdown report in `scripts/ai-eval/results/`. It waits
+between calls to stay inside the free limit, so it takes about 5 minutes per model.
+
+## 7. Before the pilot
 
 Supabase's built-in email only sends a **few emails per hour**. Fine for testing, but not
 enough for 70 people signing in on the same day. Before the pilot, set up free custom SMTP:

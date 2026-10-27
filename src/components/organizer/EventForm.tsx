@@ -19,6 +19,8 @@ import {
 } from '../../lib/types'
 import { useLoader } from '../../lib/useLoader'
 import { ErrorBox, buttonPrimary, buttonSecondary, card, inputClass } from '../ui'
+import type { AiExtractResult } from '../../lib/ai'
+import AiFillBox from './AiFillBox'
 
 type FormState = {
   title: string
@@ -176,6 +178,24 @@ export default function EventForm({
     }
   }
 
+  function applyAi({ event: ai }: AiExtractResult) {
+    setError('')
+    setForm((current) => ({
+      ...current,
+      title: ai.title || current.title,
+      category: ai.category,
+      event_date: ai.event_date ?? current.event_date,
+      start_time: ai.start_time ?? current.start_time,
+      end_time: ai.end_time ?? '',
+      location: ai.location || current.location,
+      description: ai.description || current.description,
+      bring: ai.bring,
+      notes: ai.notes,
+      capacity: ai.capacity ? String(ai.capacity) : '',
+      rsvp_deadline: ai.rsvp_deadline ?? '',
+    }))
+  }
+
   return (
     <form onSubmit={handleSubmit} className={`${card} space-y-6 p-5 sm:p-6`}>
       <div>
@@ -184,6 +204,8 @@ export default function EventForm({
           Students only see what's here, so be specific.
         </p>
       </div>
+
+      {!event && <AiFillBox onFill={applyAi} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium sm:col-span-2">

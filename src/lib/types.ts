@@ -41,6 +41,17 @@ export type ProfileInput = Pick<
   | 'consent_at'
 >
 
+export type Announcements = {
+  en: string
+  ms: string
+  ko: string
+  tone: 'friendly' | 'formal' | 'short'
+  model: string
+  /** Which event facts it was written from (see announcementSource). */
+  source: string
+  generated_at: string
+}
+
 export type HubEvent = {
   id: string
   title: string
@@ -58,6 +69,7 @@ export type HubEvent = {
   club_id: string | null
   audience: Audience
   audience_batches: number[]
+  announcements: Announcements | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -65,7 +77,7 @@ export type HubEvent = {
 
 export type EventInput = Omit<
   HubEvent,
-  'id' | 'created_by' | 'created_at' | 'updated_at'
+  'id' | 'created_by' | 'created_at' | 'updated_at' | 'announcements'
 >
 
 export type Rsvp = {
@@ -130,4 +142,11 @@ export type HubStats = {
   upcoming_events: number
   rsvps: number
   check_ins: number
+}
+
+export type AiUsageRow = {
+  kind: 'extract' | 'announce' | 'ask'
+  total: number
+  last_7_days: number
+  people: number
 }

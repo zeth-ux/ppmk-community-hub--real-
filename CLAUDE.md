@@ -6,7 +6,9 @@
   permissions. Any schema change = a NEW numbered migration file (never edit 0001),
   plus a test in `supabase/tests/test_rls.py`.
 - Never put secret keys (service_role, Gemini API key) in frontend code or `VITE_*` vars.
-  AI calls go through a server function (`/api`).
+  AI calls go through the server function `api/ai.ts` (keep it free of local imports
+  so tests and the eval script can import it). Never send student personal data to the AI.
+- After changing AI prompts, run `npm run test:ai` and the test set (`npm run ai:eval`).
 - Dates: use `todayKst()` from `src/lib/format.ts`. Korea time, not UTC.
 - Keep it simple: no new libraries without a clear reason.
 - Before finishing: `npm run build` and `npm run lint` must pass.

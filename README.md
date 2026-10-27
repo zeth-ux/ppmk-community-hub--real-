@@ -17,6 +17,7 @@ AI+X course final project · 2026.
 | Database, login, permissions | Supabase (Postgres + row-level security) |
 | Hosting | Vercel |
 | Login | Email magic link + one-time code (no passwords) |
+| AI | Google Gemini API (free tier), via a server function in `api/ai.ts` |
 
 ## Getting started
 
@@ -27,7 +28,21 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # typecheck + production build
 npm run lint
+npm run test:ai    # AI endpoint unit tests (fake AI, no key needed)
+npm run test:db    # database permission tests (needs a local Postgres)
+npm run ai:eval    # score real AI models on the test set (needs GEMINI_API_KEY)
 ```
+
+## AI features
+
+- **Fill with AI**: organizers describe an event in their own words (English, Malay or
+  Korean, slang welcome) and the AI fills in the event form.
+- **Announcement writer**: one tap writes the group-chat announcement in English,
+  Malaysian Malay and Korean, ready to paste with the RSVP link.
+
+Design rules: the AI only *suggests* (a human checks everything), only event information is
+sent (never student data), the key stays on the server, and each organizer has a daily limit.
+Accuracy is measured with a test set in `scripts/ai-eval/`.
 
 ## How it's organised
 
@@ -37,6 +52,10 @@ src/
   context/        AuthContext: who is signed in + their profile and role
   components/     layout, route guards, event card, organizer tools
   pages/          one file per screen
+api/
+  ai.ts           server function for the AI features (runs on Vercel)
+scripts/ai-eval/  AI test set + scoring script
+tests/            unit tests
 supabase/
   migrations/     the database: tables, permission rules, functions
   tests/          automated permission tests (run against a local Postgres)
@@ -53,4 +72,4 @@ Enforced inside the database, not just hidden in the UI:
 | Admin | + member directory, change roles, manage clubs, hub statistics |
 | Not signed in | Nothing |
 
-The permission rules are covered by 42 automated tests in `supabase/tests/test_rls.py`.
+The permission rules are covered by 56 automated tests in `supabase/tests/test_rls.py`.

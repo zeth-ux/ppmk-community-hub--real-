@@ -46,6 +46,10 @@ const sections: [string, ReactNode][] = [
     </>,
   ],
   [
+    'AI features',
+    "Organizers can use AI (Google's Gemini) to turn their rough notes into an event and to write announcements in English, Malay and Korean. Only event information is sent to the AI (title, date, place and the organizer's notes), never your profile, phone number or RSVPs. Because we use Google's free tier, Google may use the text sent to improve its services, so organizers are asked not to put personal details in their notes. The AI only suggests: an organizer always checks the result before it is saved or shared. We count how often each person uses the AI (to keep within the free limit) but don't store the text.",
+  ],
+  [
     'Sharing',
     'We never sell your data or share it outside PPMK/EMSU event organizing.',
   ],
