@@ -47,7 +47,7 @@ const sections: [string, ReactNode][] = [
   ],
   [
     'AI features',
-    "Organizers can use AI (Google's Gemini) to turn their rough notes into an event and to write announcements in English, Malay and Korean. Only event information is sent to the AI (title, date, place and the organizer's notes), never your profile, phone number or RSVPs. Because we use Google's free tier, Google may use the text sent to improve its services, so organizers are asked not to put personal details in their notes. The AI only suggests: an organizer always checks the result before it is saved or shared. We count how often each person uses the AI (to keep within the free limit) but don't store the text.",
+    "Organizers can use AI (Google's Gemini) to turn their rough notes into an event and to write announcements in English, Malay and Korean; for this, only event information is sent. Students can use the \"Ask the Hub\" chatbot: it sends your question, the events and clubs you can see, and your OWN RSVP answers (which events you said going / maybe / not going to), never your name, phone number, student ID or anything about other students. Because we use Google's free tier, Google may use the text sent to improve its services, so please don't type personal details into the chat or notes. The AI only suggests; it can't RSVP or change anything for you. We count how often each person uses the AI (to keep within the free limit) but don't store the text.",
   ],
   [
     'Sharing',

@@ -16,6 +16,7 @@ import ExplorePage from './pages/ExplorePage'
 import PrivacyPage from './pages/PrivacyPage'
 import SurveyPage from './pages/SurveyPage'
 import AdminPage from './pages/AdminPage'
+import AskPage from './pages/AskPage'
 
 export default function App() {
   if (!supabaseConfigured) return <SetupNeeded />
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/clubs" element={<RequireAuth><ClubsPage /></RequireAuth>} />
             <Route path="/explore" element={<RequireAuth><ExplorePage /></RequireAuth>} />
             <Route path="/me" element={<RequireAuth><MePage /></RequireAuth>} />
+            <Route path="/ask" element={<RequireAuth><AskPage /></RequireAuth>} />
 
             {/* Roles */}
             <Route

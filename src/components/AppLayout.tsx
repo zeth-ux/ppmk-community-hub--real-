@@ -6,6 +6,7 @@ import {
   GraduationCap,
   LogIn,
   ShieldCheck,
+  Sparkles,
   UserRound,
   Users,
 } from 'lucide-react'
@@ -17,15 +18,17 @@ export default function AppLayout() {
 
   const navItems = [
     { to: '/events', label: 'Events', icon: CalendarDays, show: true },
+    { to: '/ask', label: 'Ask', icon: Sparkles, show: true },
     { to: '/clubs', label: 'Clubs', icon: Users, show: true },
     { to: '/explore', label: 'Explore', icon: Compass, show: true },
     { to: '/organizer', label: 'Organize', icon: ClipboardList, show: isOrganizer },
     { to: '/admin', label: 'Admin', icon: ShieldCheck, show: isAdmin },
   ].filter((item) => item.show)
 
-  // Phones get at most 5 tabs: Admin lives on the Me page there.
+  // Phones get at most 5 tabs: Admin lives on the Me page and Explore on
+  // the Events page there.
   const mobileItems = [
-    ...navItems.filter((item) => item.to !== '/admin'),
+    ...navItems.filter((item) => item.to !== '/admin' && item.to !== '/explore'),
     { to: '/me', label: 'Me', icon: UserRound, show: true },
   ]
 

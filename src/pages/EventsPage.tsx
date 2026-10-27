@@ -92,6 +92,14 @@ export default function EventsPage() {
         }
       />
 
+      <Link
+        to="/explore"
+        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:border-primary md:hidden"
+      >
+        Explore events around Korea
+        <span aria-hidden>→</span>
+      </Link>
+
       <div className="space-y-3">
         <div className="relative">
           <Search

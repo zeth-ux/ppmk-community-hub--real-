@@ -94,7 +94,8 @@ Open http://localhost:5173.
 4. Optional: choose the model with `GEMINI_MODEL` (default `gemini-3.5-flash-lite`).
    Other options: `gemini-3.8-flash`, or the open-source `gemma-4-26b-a4b-it`.
 
-Each organizer can use each AI feature 40 times a day (see `0003_ai.sql`).
+Daily limits per person (see `0003_ai.sql`): 40 AI form fills and 40 announcements for
+organizers, 30 chatbot questions for everyone.
 
 ### Run the AI test set (for the report)
 
@@ -102,9 +103,11 @@ Each organizer can use each AI feature 40 times a day (see `0003_ai.sql`).
 npm run ai:eval -- gemini-3.5-flash-lite gemma-4-26b-a4b-it
 ```
 
-It scores each model on 24 real-style notes (English, Malay, Korean, slang, traps) and
-6 announcements, and saves a Markdown report in `scripts/ai-eval/results/`. It waits
-between calls to stay inside the free limit, so it takes about 5 minutes per model.
+It scores each model on 24 real-style notes (English, Malay, Korean, slang, traps),
+6 announcements and 16 chatbot questions (including off-topic, made-up-event and
+prompt-injection tests), and saves a Markdown report in `scripts/ai-eval/results/`.
+It waits between calls to stay inside the free limit, so it takes about 4 minutes per
+model. Run one part only with `--only=extract`, `--only=announce` or `--only=ask`.
 
 ## 7. Before the pilot
 

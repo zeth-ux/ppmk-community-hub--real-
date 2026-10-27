@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarCheck, ClipboardList, MousePointerClick, UserPlus } from 'lucide-react'
+import { ArrowRight, CalendarCheck, ClipboardList, MousePointerClick, Sparkles, UserPlus } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { listEvents, listRsvpCounts } from '../lib/api'
@@ -71,6 +71,10 @@ function SignedInHome() {
           <Link to="/events" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary">
             <CalendarCheck size={16} />
             All events
+          </Link>
+          <Link to="/ask" className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/25">
+            <Sparkles size={16} />
+            Ask the Hub
           </Link>
           {isOrganizer && (
             <Link to="/organizer?new=1" className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/25">

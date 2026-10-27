@@ -9,7 +9,7 @@ Last updated: 2026-10-27 (week 9)
 | 8 | Oct 20–26 | Database, permissions, magic-link login, one-time profile, real roles | ✅ Live on Vercel |
 | 9 | Oct 27–Nov 2 | Core loop: create event → share link → one-tap RSVP → attendee list → CSV | ✅ Built, testing with friends |
 | 10 | Nov 3–9 | AI invitation writer (EN/MS/KO, Gemini) + test set; custom SMTP; dry run | ✅ AI built early, run the test set |
-| 11 | Nov 10–16 | "Ask the Hub" chatbot + its test set; fixes from dry run | Next |
+| 11 | Nov 10–16 | "Ask the Hub" chatbot + its test set; fixes from dry run | ✅ Chatbot built early; next: pilot prep |
 | 12 | Nov 17–23 | Real EMSU pilot event + feedback survey | |
 | 13–14 | Nov 24–Dec 7 | Polish, numbers for the report, demo video | |
 | 15 | Dec 8+ | Presentation | |
@@ -37,6 +37,13 @@ Last updated: 2026-10-27 (week 9)
     40 uses per feature per day; only event info is sent to the AI
   - 17 unit tests (`npm run test:ai`) + AI test set with scoring (`npm run ai:eval`)
   - Admin page shows AI usage numbers
+- **"Ask the Hub" chatbot (week 11, done early):**
+  - Students ask in English / Malay / Korean about events, clubs and their own RSVPs
+  - Answers only from hub data (events the student can see, clubs, their own RSVP answers);
+    shows tappable event cards with RSVP status; says so when it doesn't know
+  - Refuses off-topic requests and never reveals other students' data
+  - 30 questions per student per day; conversation kept while browsing
+  - 6 more unit tests (23 total) + 16 chatbot questions in the test set
 
 ## Decisions
 
@@ -48,7 +55,8 @@ Last updated: 2026-10-27 (week 9)
 
 - AI: Gemini API free tier instead of a self-hosted Hugging Face model (free, strong in
   Malay/Korean, no server to run). Trade-off: Google may use free-tier inputs, so only event
-  info is ever sent. Model is switchable (`GEMINI_MODEL`), so Gemini vs open-source Gemma can
+  info is ever sent (plus, for the chatbot, the asking student's own RSVP answers, a choice
+  made on 27 Oct for a more useful assistant; name/phone/student ID are never sent). Model is switchable (`GEMINI_MODEL`), so Gemini vs open-source Gemma can
   be compared on the same test set.
 - The AI only suggests; a human always checks before saving/sending.
 

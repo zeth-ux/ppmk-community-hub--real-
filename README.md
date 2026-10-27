@@ -39,9 +39,13 @@ npm run ai:eval    # score real AI models on the test set (needs GEMINI_API_KEY)
   Korean, slang welcome) and the AI fills in the event form.
 - **Announcement writer**: one tap writes the group-chat announcement in English,
   Malaysian Malay and Korean, ready to paste with the RSVP link.
+- **Ask the Hub**: a chatbot for students: "Ada event apa minggu ni?", "What am I going to?".
+  It answers only from the hub's events, clubs and the student's own RSVPs, and links to
+  the events so they can RSVP.
 
 Design rules: the AI only *suggests* (a human checks everything), only event information is
-sent (never student data), the key stays on the server, and each organizer has a daily limit.
+sent (plus the asking student's own RSVP answers for the chatbot; never names, phones or
+anyone else's data), the key stays on the server, and everyone has a daily limit.
 Accuracy is measured with a test set in `scripts/ai-eval/`.
 
 ## How it's organised

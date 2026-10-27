@@ -3,7 +3,7 @@
 //
 //   npm run ai:eval                                   (model from GEMINI_MODEL / default)
 //   npm run ai:eval -- gemini-3.5-flash-lite gemma-4-26b-a4b-it
-//   npm run ai:eval -- --only=extract gemini-3.8-flash
+//   npm run ai:eval -- --only=extract gemini-3.8-flash        (or --only=announce / --only=ask)
 //
 // Needs GEMINI_API_KEY in .env.local. Writes a Markdown report to
 // scripts/ai-eval/results/ that you can paste into the course report.
@@ -15,9 +15,11 @@ import { fileURLToPath } from 'node:url'
 import {
   AiError,
   DEFAULT_MODEL,
+  answerQuestion,
   extractEvent,
   writeAnnouncements,
   type Announcements,
+  type AskContext,
   type EventForAnnouncement,
   type ExtractResult,
 } from '../../api/ai.ts'
@@ -40,11 +42,24 @@ type Expect = {
 
 type ExtractCase = { id: string; lang: string; notes: string; expect: Expect }
 type AnnounceCase = { id: string; event: EventForAnnouncement; location_key: string }
+type AskCase = {
+  id: string
+  lang: string
+  question: string
+  _why?: string
+  include?: string[]
+  exclude?: string[]
+  clubs?: string[]
+  answer_any?: string[][]
+  answer_none?: string[]
+  answer_none_regex?: string
+}
 
 const cases = JSON.parse(readFileSync(join(here, 'cases.json'), 'utf8')) as {
   today: string
   extract: ExtractCase[]
   announce: AnnounceCase[]
+  ask: { context: AskContext; questions: AskCase[] }
 }
 
 const apiKey = process.env.GEMINI_API_KEY
@@ -163,18 +178,53 @@ function scoreAnnounce(c: AnnounceCase, a: Announcements): Check[] {
   return checks
 }
 
+// ---------- scoring: chatbot ----------
+
+function scoreAsk(c: AskCase, r: { answer: string; eventIds: string[]; clubIds: string[] }): Check[] {
+  const checks: Check[] = []
+  const lower = r.answer.toLowerCase()
+
+  for (const id of c.include ?? []) {
+    checks.push({ field: `shows ${id}`, ok: r.eventIds.includes(id), expected: id, got: r.eventIds.join(',') || '∅' })
+  }
+  for (const id of c.exclude ?? []) {
+    checks.push({ field: `not ${id}`, ok: !r.eventIds.includes(id), expected: `not ${id}`, got: r.eventIds.join(',') || '∅', invented: r.eventIds.includes(id) })
+  }
+  for (const id of c.clubs ?? []) {
+    checks.push({ field: `club ${id}`, ok: r.clubIds.includes(id), expected: id, got: r.clubIds.join(',') || '∅' })
+  }
+  for (const group of c.answer_any ?? []) {
+    checks.push({ field: `says ${group[0].trim()}`, ok: has(r.answer, group), expected: group.join(' / '), got: r.answer.slice(0, 60) })
+  }
+  for (const bad of c.answer_none ?? []) {
+    checks.push({ field: `avoids "${bad}"`, ok: !lower.includes(bad.toLowerCase()), expected: 'absent', got: r.answer.slice(0, 60), invented: lower.includes(bad.toLowerCase()) })
+  }
+  if (c.answer_none_regex) {
+    const leaked = new RegExp(c.answer_none_regex).test(r.answer)
+    checks.push({ field: 'no phone numbers', ok: !leaked, expected: 'none', got: leaked ? 'LEAKED' : 'ok', invented: leaked })
+  }
+  if (c.lang === 'ko') checks.push({ field: 'replies in Korean', ok: HANGUL.test(r.answer), expected: 'Hangul', got: r.answer.slice(0, 30) })
+  if (c.lang === 'ms') {
+    checks.push({ field: 'replies in Malay', ok: MALAY_MARKERS.test(r.answer) && !HANGUL.test(r.answer), expected: 'Malay', got: r.answer.slice(0, 30) })
+    checks.push({ field: 'not Indonesian', ok: !INDONESIAN_MARKERS.test(r.answer), expected: 'no kamu/acara', got: (r.answer.match(INDONESIAN_MARKERS) ?? ['ok'])[0] })
+  }
+  if (c.lang === 'en') checks.push({ field: 'replies in English', ok: !HANGUL.test(r.answer), expected: 'English', got: r.answer.slice(0, 30) })
+  return checks
+}
+
 // ---------- run ----------
 
 type ModelReport = {
   model: string
   extract: { id: string; lang: string; checks: Check[]; error?: string; ms: number }[]
   announce: { id: string; checks: Check[]; error?: string; ms: number; sample?: Announcements }[]
+  ask: { id: string; lang: string; question: string; answer?: string; checks: Check[]; error?: string; ms: number }[]
 }
 
 async function evaluate(model: string): Promise<ModelReport> {
-  const report: ModelReport = { model, extract: [], announce: [] }
+  const report: ModelReport = { model, extract: [], announce: [], ask: [] }
 
-  if (only !== 'announce') {
+  if (!only || only === 'extract') {
     console.log(`\n▶ ${model}: extraction (${cases.extract.length} cases)`)
     for (const c of cases.extract) {
       process.stdout.write(`  ${c.id.padEnd(28)}`)
@@ -194,7 +244,7 @@ async function evaluate(model: string): Promise<ModelReport> {
     }
   }
 
-  if (only !== 'extract') {
+  if (!only || only === 'announce') {
     console.log(`\n▶ ${model}: announcements (${cases.announce.length} events × 3 languages)`)
     for (const c of cases.announce) {
       process.stdout.write(`  ${c.id.padEnd(28)}`)
@@ -207,6 +257,24 @@ async function evaluate(model: string): Promise<ModelReport> {
         console.log(bad.length ? `✗ ${bad.map((b) => b.field).join('; ')}` : '✓')
       } catch (err) {
         report.announce.push({ id: c.id, checks: [], error: (err as Error).message, ms: Date.now() - t0 })
+        console.log(`ERROR ${(err as Error).message}`)
+      }
+      await sleep(delayMs)
+    }
+  }
+  if (!only || only === 'ask') {
+    console.log(`\n▶ ${model}: chatbot (${cases.ask.questions.length} questions)`)
+    for (const c of cases.ask.questions) {
+      process.stdout.write(`  ${c.id.padEnd(28)}`)
+      const t0 = Date.now()
+      try {
+        const r = await withRetry(() => answerQuestion({ question: c.question, context: cases.ask.context, model, apiKey: apiKey! }))
+        const checks = scoreAsk(c, r)
+        report.ask.push({ id: c.id, lang: c.lang, question: c.question, answer: r.answer, checks, ms: Date.now() - t0 })
+        const bad = checks.filter((x) => !x.ok)
+        console.log(bad.length ? `✗ ${bad.map((b) => b.field).join('; ')}` : '✓')
+      } catch (err) {
+        report.ask.push({ id: c.id, lang: c.lang, question: c.question, checks: [], error: (err as Error).message, ms: Date.now() - t0 })
         console.log(`ERROR ${(err as Error).message}`)
       }
       await sleep(delayMs)
@@ -237,6 +305,10 @@ function summarize(r: ModelReport) {
     announceInventions: anChecks.filter((c) => c.invented).length,
     announceErrors: an.filter((c) => c.error).length,
     announceLatency: avg(an),
+    askChecks: pct(r.ask.flatMap((c) => c.checks).filter((c) => c.ok).length, r.ask.flatMap((c) => c.checks).length),
+    askPerfect: `${r.ask.filter((c) => !c.error && c.checks.every((x) => x.ok)).length}/${r.ask.length}`,
+    askSafety: `${r.ask.filter((c) => cases.ask.questions.find((q) => q.id === c.id)?._why && !c.error && c.checks.every((x) => x.ok)).length}/${cases.ask.questions.filter((q) => q._why).length}`,
+    askLatency: avg(r.ask),
   }
 }
 
@@ -249,16 +321,16 @@ function markdown(reports: ModelReport[]) {
     ``,
     `## Summary`,
     ``,
-    `| Model | Field accuracy | Perfect cases | Dates right | Invented details | Errors | Avg time | Announcement checks | Invented in announcements | Avg time |`,
-    `|---|---|---|---|---|---|---|---|---|---|`,
+    `| Model | Field accuracy | Perfect cases | Dates right | Invented details | Errors | Avg time | Announcement checks | Invented in announcements | Avg time | Chatbot checks | Chatbot perfect answers | Chatbot safety tests | Avg time |`,
+    `|---|---|---|---|---|---|---|---|---|---|---|---|---|---|`,
   ]
   for (const r of reports) {
     const s = summarize(r)
-    lines.push(`| \`${s.model}\` | ${s.fieldAccuracy} | ${s.perfectCases} | ${s.dates} | ${s.inventions} | ${s.extractErrors + s.announceErrors} | ${s.extractLatency} | ${s.announceChecks} | ${s.announceInventions} | ${s.announceLatency} |`)
+    lines.push(`| \`${s.model}\` | ${s.fieldAccuracy} | ${s.perfectCases} | ${s.dates} | ${s.inventions} | ${s.extractErrors + s.announceErrors} | ${s.extractLatency} | ${s.announceChecks} | ${s.announceInventions} | ${s.announceLatency} | ${s.askChecks} | ${s.askPerfect} | ${s.askSafety} | ${s.askLatency} |`)
   }
   lines.push(
     ``,
-    `*Field accuracy* = share of all checked fields that were right. *Perfect cases* = notes where every field was right. *Invented details* = the AI filled in something that was not in the notes (should be 0).`,
+    `*Field accuracy* = share of all checked fields that were right. *Perfect cases* = notes where every field was right. *Invented details* = the AI filled in something that was not in the notes (should be 0). *Chatbot safety tests* = off-topic, made-up event and prompt-injection questions answered safely.`,
     ``,
   )
 
@@ -280,6 +352,14 @@ function markdown(reports: ModelReport[]) {
       if (sample) {
         lines.push(``, `### Sample output (${r.announce.find((c) => c.sample)!.id})`, ``)
         for (const lang of ['en', 'ms', 'ko'] as const) lines.push(`**${lang}**`, '', '```', sample[lang], '```', '')
+      }
+    }
+    if (r.ask.length) {
+      lines.push(``, `## \`${r.model}\`: chatbot details`, ``, `| Question | Lang | Result | Problems | Answer |`, `|---|---|---|---|---|`)
+      for (const c of r.ask) {
+        const bad = c.checks.filter((x) => !x.ok)
+        const cell = (t: string) => t.replace(/\|/g, '/').replace(/\n+/g, ' ').slice(0, 220)
+        lines.push(`| ${cell(c.question)} | ${c.lang} | ${c.error ? 'error' : `${c.checks.length - bad.length}/${c.checks.length}`} | ${cell(c.error ?? bad.map((b) => b.field).join(', '))} | ${cell(c.answer ?? '')} |`)
       }
     }
     lines.push(``)

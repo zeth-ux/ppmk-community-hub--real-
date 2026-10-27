@@ -86,3 +86,17 @@ export function announcementSource(event: {
     event.rsvp_deadline ?? '',
   ].join('|')
 }
+
+export type ChatTurn = { role: 'user' | 'assistant'; text: string }
+
+export type AiAskResult = {
+  answer: string
+  eventIds: string[]
+  clubIds: string[]
+  model: string
+  remaining: number
+}
+
+export function aiAsk(question: string, history: ChatTurn[]) {
+  return callAi<AiAskResult>({ action: 'ask', question, history: history.slice(-6) })
+}

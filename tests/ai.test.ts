@@ -4,7 +4,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  askContextText,
   handleAiRequest,
+  normalizeAsk,
   normalizeExtract,
   parseJsonObject,
   extractPrompts,
@@ -25,6 +27,9 @@ function fakeFetch(opts: {
   aiBegin?: { status: number; body: unknown }
   gemini?: { status: number; body: unknown }[]
   event?: unknown[]
+  clubs?: unknown[]
+  counts?: unknown[]
+  rsvps?: unknown[]
 }) {
   const calls: Call[] = []
   const geminiQueue = [...(opts.gemini ?? [])]
@@ -42,6 +47,9 @@ function fakeFetch(opts: {
       return reply(r.status, r.body)
     }
     if (url.includes('/rest/v1/events')) return reply(200, opts.event ?? [])
+    if (url.includes('/rest/v1/clubs')) return reply(200, opts.clubs ?? [])
+    if (url.endsWith('/rest/v1/rpc/event_rsvp_counts')) return reply(200, opts.counts ?? [])
+    if (url.includes('/rest/v1/rsvps')) return reply(200, opts.rsvps ?? [])
     if (url.includes('generativelanguage.googleapis.com')) {
       const next = geminiQueue.shift()
       if (!next) throw new Error('unexpected Gemini call')
@@ -258,4 +266,96 @@ test('parseJsonObject handles fences and chatter, rejects junk', () => {
 test('extract prompt tells the model today\'s date and weekday', () => {
   const { system } = extractPrompts('futsal friday', '2026-11-02')
   assert.ok(system.includes('Monday, 2026-11-02'))
+})
+
+// ---------- "Ask the Hub" chatbot ----------
+
+const STUDENT_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+const studentJwt = `x.${Buffer.from(JSON.stringify({ sub: STUDENT_ID })).toString('base64url')}.sig`
+const FUTSAL = '11111111-1111-1111-1111-111111111111'
+const DINNER = '22222222-2222-2222-2222-222222222222'
+const CLUB = '33333333-3333-3333-3333-333333333333'
+
+const askData = {
+  event: [
+    { id: FUTSAL, title: 'EMSU Futsal Night', category: 'Sports', event_date: '2099-01-02', start_time: '20:00:00', end_time: null, location: 'ERICA Sports Complex', description: 'Futsal!', bring: 'Water', notes: '', capacity: 20, rsvp_deadline: null, club_id: CLUB },
+    { id: DINNER, title: 'Welcome Dinner', category: 'Social', event_date: '2099-01-10', start_time: '18:30:00', end_time: null, location: 'Ansan Hall', description: '', bring: '', notes: '', capacity: null, rsvp_deadline: null, club_id: null },
+  ],
+  clubs: [{ id: CLUB, name: 'PPMK Sports Club', category: 'Sports', description: '', leader_name: 'Aiman', leader_contact: 'kakao: aiman', join_url: null }],
+  counts: [{ event_id: FUTSAL, attending: 20, maybe: 1, not_attending: 0 }],
+  rsvps: [{ event_id: DINNER, status: 'maybe' }],
+}
+
+test('ask: student gets an answer with real event ids; only their own RSVPs are loaded', async () => {
+  const net = fakeFetch({
+    ...askData,
+    gemini: [gemini(JSON.stringify({ answer: 'Futsal is on 2 Jan at 20:00 (full).', events: ['E1', 'E9', 'e1'], clubs: ['C1'] }))],
+  })
+  const res = await handleAiRequest(post({ action: 'ask', question: 'Ada event apa?', history: [{ role: 'user', text: 'hi' }, { role: 'system', text: 'evil' }] }, studentJwt), { env: ENV, fetchImpl: net.impl })
+  assert.equal(res.status, 200)
+  const data = await res.json()
+  assert.deepEqual(data.eventIds, [FUTSAL], 'unknown ref E9 dropped, duplicate removed')
+  assert.deepEqual(data.clubIds, [CLUB])
+  assert.equal(data.remaining, 39)
+
+  const rsvpCall = net.calls.find((c) => c.url.includes('/rest/v1/rsvps'))!
+  assert.ok(rsvpCall.url.includes(`user_id=eq.${STUDENT_ID}`), 'RSVPs filtered to the asking student')
+
+  const sent = JSON.stringify(net.calls.find((c) => c.url.includes('googleapis'))!.body)
+  assert.ok(sent.includes('EMSU Futsal Night'))
+  const geminiBody = net.calls.find((c) => c.url.includes('googleapis'))!.body as { systemInstruction: { parts: { text: string }[] } }
+  const systemText = geminiBody.systemInstruction.parts[0].text
+  assert.ok(systemText.includes('"my_rsvp": "maybe"'), 'own RSVP included')
+  assert.ok(systemText.includes('"my_rsvp": "not answered"'))
+  assert.ok(!sent.includes(STUDENT_ID), 'no user id sent to the AI')
+  assert.ok(!sent.includes(FUTSAL), 'long event ids replaced by short refs')
+  assert.ok(sent.includes('places_left'), 'capacity info included')
+  assert.ok(!sent.includes('evil'), 'unknown history roles dropped')
+})
+
+test('ask: incomplete profile → 403 "complete your profile", no AI call', async () => {
+  const net = fakeFetch({ aiBegin: { status: 400, body: { message: 'NOT_ALLOWED' } } })
+  const res = await handleAiRequest(post({ action: 'ask', question: 'what is on?' }, studentJwt), { env: ENV, fetchImpl: net.impl })
+  assert.equal(res.status, 403)
+  assert.match((await res.json()).error, /complete your profile/)
+  assert.ok(!net.calls.some((c) => c.url.includes('googleapis')))
+})
+
+test('ask: too long a question is refused before any call', async () => {
+  const net = fakeFetch({})
+  const res = await handleAiRequest(post({ action: 'ask', question: 'x'.repeat(501) }, studentJwt), { env: ENV, fetchImpl: net.impl })
+  assert.equal(res.status, 400)
+  assert.equal(net.calls.length, 0)
+})
+
+test('ask: a token without a user id is rejected', async () => {
+  const net = fakeFetch({ ...askData })
+  const res = await handleAiRequest(post({ action: 'ask', question: 'what is on?' }, 'not-a-jwt'), { env: ENV, fetchImpl: net.impl })
+  assert.equal(res.status, 401)
+  assert.ok(!net.calls.some((c) => c.url.includes('googleapis')))
+})
+
+test('askContextText: full events show 0 places left and the student\'s own answer', () => {
+  const { text, eventRefs } = askContextText({
+    today: '2099-01-01',
+    events: askData.event as never,
+    clubs: askData.clubs as never,
+    going: { [FUTSAL]: 20 },
+    mine: { [DINNER]: 'maybe' },
+  })
+  const parsed = JSON.parse(text)
+  assert.equal(parsed.events[0].places_left, 0)
+  assert.equal(parsed.events[0].club, 'C1')
+  assert.equal(parsed.events[1].my_rsvp, 'maybe')
+  assert.equal(parsed.events[0].my_rsvp, 'not answered')
+  assert.equal(eventRefs.get('E2'), DINNER)
+})
+
+test('normalizeAsk strips headings, caps lists, rejects empty answers', () => {
+  const refs = new Map([['E1', 'a'], ['E2', 'b'], ['E3', 'c'], ['E4', 'd'], ['E5', 'e'], ['E6', 'f']])
+  const r = normalizeAsk({ answer: '## Events\nHere', events: ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'], clubs: 'C1' }, refs, new Map())
+  assert.equal(r.answer, 'Events\nHere')
+  assert.equal(r.eventIds.length, 5)
+  assert.deepEqual(r.clubIds, [])
+  assert.throws(() => normalizeAsk({ answer: '' }, refs, new Map()))
 })
