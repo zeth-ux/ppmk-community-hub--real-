@@ -45,6 +45,33 @@ Last updated: 2026-10-27 (week 9)
   - 30 questions per student per day; conversation kept while browsing
   - 6 more unit tests (23 total) + 16 chatbot questions in the test set
 
+## AI evaluation log (for the report)
+
+**Run 1: 27 Oct, baseline** (`scripts/ai-eval/results/2026-10-27-05-26_*.md`, `…05-31_gemma…md`)
+
+| | gemini-3.5-flash-lite | gemma-4-26b-a4b-it (open source) |
+|---|---|---|
+| Event form: field accuracy | 99% (23/24 perfect) | 99% (23/24 perfect) |
+| Event form: invented details | 0 | 0 |
+| Event form: avg time | **1.3 s** | **31.4 s** (≈24× slower; ~half timed out at 30 s) |
+| Announcements: checks passed | 98% | not run (too slow) |
+| Chatbot: checks passed | 95% (11/16 perfect) | not run |
+
+Decision: **Gemini Flash-Lite**: same accuracy as the open model, fast enough for a live app.
+
+Problems found by the test set → fixes:
+1. Both models read Malay "malam jumaat" as Friday; it means **Thursday night**. → Added the
+   Malay "malam <day>" rule to the prompt.
+2. Chatbot answered 4 English questions in Malay (always when apologising/refusing).
+   → The server now detects the question's language and tells the model explicitly;
+   the scoring now also catches Malay answers to English questions (it missed them before).
+3. Chatbot forgot "maybe" RSVPs when asked "Saya dah RSVP event mana?". → Explicit rule.
+4. Dates written as `2026-11-06` in chats/announcements. → Ready-made natural dates per
+   language ("Jumaat, 6 November", "11월 6일 (금)").
+5. Scoring bugs fixed: "acara" is valid Malaysian Malay; zero-padded days ("06") now count.
+
+**Run 2: after fixes**: _to do: rerun `npm run ai:eval -- gemini-3.5-flash-lite` and add the numbers here._
+
 ## Decisions
 
 - Kept Vite + React from the demo (solo project; no reason to switch to Next.js).

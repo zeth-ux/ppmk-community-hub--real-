@@ -108,6 +108,9 @@ It scores each model on 24 real-style notes (English, Malay, Korean, slang, trap
 prompt-injection tests), and saves a Markdown report in `scripts/ai-eval/results/`.
 It waits between calls to stay inside the free limit, so it takes about 4 minutes per
 model. Run one part only with `--only=extract`, `--only=announce` or `--only=ask`.
+Results are saved after every question, so you can stop with Ctrl+C at any time.
+Slow models (Gemma) time out after 30 s; give them longer with
+`$env:AI_TIMEOUT_MS=90000` (PowerShell) before running.
 
 ## 7. Before the pilot
 

@@ -4,6 +4,7 @@
 //   npm run ai:eval                                   (model from GEMINI_MODEL / default)
 //   npm run ai:eval -- gemini-3.5-flash-lite gemma-4-26b-a4b-it
 //   npm run ai:eval -- --only=extract gemini-3.8-flash        (or --only=announce / --only=ask)
+//   AI_TIMEOUT_MS=90000 npm run ai:eval -- gemma-4-26b-a4b-it  (give slow models longer)
 //
 // Needs GEMINI_API_KEY in .env.local. Writes a Markdown report to
 // scripts/ai-eval/results/ that you can paste into the course report.
@@ -146,7 +147,11 @@ function scoreExtract(c: ExtractCase, r: ExtractResult): Check[] {
 
 const HANGUL = /[가-힣]/
 const MALAY_MARKERS = /\b(jom|korang|semua|jangan|untuk|dan|di|pada|akan|kita|anda)\b/i
-const INDONESIAN_MARKERS = /\b(kamu|acara|kegiatan|silakan|teman-teman)\b/i
+// "acara" is normal in Malaysian Malay too, so it isn't counted.
+const INDONESIAN_MARKERS = /\b(kamu|kegiatan|silakan|teman-teman)\b/i
+// Words that only appear in Malay, to catch English questions answered in Malay.
+const MALAY_ONLY = /\b(maaf|saya|anda|tiada|sila|akan|dengan|hanya|tidak|sudah|boleh|untuk|acara|maklumat)\b/gi
+const looksMalay = (t: string) => (t.match(MALAY_ONLY) ?? []).length >= 2
 const MONEY = /(\bRM\s?\d|₩|\d[\d,]*\s?(won|원)\b|\bfree (food|meal|makan)|\bpercuma\b|무료)/i
 
 function mentionsHour(textOut: string, time: string) {
@@ -159,7 +164,7 @@ function scoreAnnounce(c: AnnounceCase, a: Announcements): Check[] {
   const checks: Check[] = []
   const factsHaveMoney = MONEY.test(`${c.event.notes} ${c.event.description}`)
   const day = Number(c.event.event_date.slice(8, 10))
-  const mentionsDay = (t: string) => new RegExp(`(^|\\D)${day}(\\D|$)`).test(t)
+  const mentionsDay = (t: string) => new RegExp(`(^|\\D)0?${day}(\\D|$)`).test(t)
 
   checks.push({ field: 'ko is Korean', ok: HANGUL.test(a.ko), expected: 'Hangul', got: a.ko.slice(0, 30) })
   checks.push({ field: 'ms is Malay', ok: MALAY_MARKERS.test(a.ms), expected: 'Malay words', got: a.ms.slice(0, 30) })
@@ -208,7 +213,7 @@ function scoreAsk(c: AskCase, r: { answer: string; eventIds: string[]; clubIds: 
     checks.push({ field: 'replies in Malay', ok: MALAY_MARKERS.test(r.answer) && !HANGUL.test(r.answer), expected: 'Malay', got: r.answer.slice(0, 30) })
     checks.push({ field: 'not Indonesian', ok: !INDONESIAN_MARKERS.test(r.answer), expected: 'no kamu/acara', got: (r.answer.match(INDONESIAN_MARKERS) ?? ['ok'])[0] })
   }
-  if (c.lang === 'en') checks.push({ field: 'replies in English', ok: !HANGUL.test(r.answer), expected: 'English', got: r.answer.slice(0, 30) })
+  if (c.lang === 'en') checks.push({ field: 'replies in English', ok: !HANGUL.test(r.answer) && !looksMalay(r.answer), expected: 'English', got: r.answer.slice(0, 30) })
   return checks
 }
 
@@ -221,8 +226,21 @@ type ModelReport = {
   ask: { id: string; lang: string; question: string; answer?: string; checks: Check[]; error?: string; ms: number }[]
 }
 
+const outDir = join(here, 'results')
+mkdirSync(outDir, { recursive: true })
+const file = join(outDir, `${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}_${models.join('_vs_')}.md`)
+const reports: ModelReport[] = []
+let current: ModelReport | null = null
+
+/** Writes the report so far (finished models + the one in progress). */
+function saveProgress() {
+  const all = current && !reports.includes(current) ? [...reports, current] : reports
+  writeFileSync(file, markdown(all))
+}
+
 async function evaluate(model: string): Promise<ModelReport> {
   const report: ModelReport = { model, extract: [], announce: [], ask: [] }
+  current = report
 
   if (!only || only === 'extract') {
     console.log(`\n▶ ${model}: extraction (${cases.extract.length} cases)`)
@@ -240,6 +258,7 @@ async function evaluate(model: string): Promise<ModelReport> {
         report.extract.push({ id: c.id, lang: c.lang, checks: [], error: (err as Error).message, ms: Date.now() - t0 })
         console.log(`ERROR ${(err as Error).message}`)
       }
+      saveProgress()
       await sleep(delayMs)
     }
   }
@@ -259,6 +278,7 @@ async function evaluate(model: string): Promise<ModelReport> {
         report.announce.push({ id: c.id, checks: [], error: (err as Error).message, ms: Date.now() - t0 })
         console.log(`ERROR ${(err as Error).message}`)
       }
+      saveProgress()
       await sleep(delayMs)
     }
   }
@@ -277,6 +297,7 @@ async function evaluate(model: string): Promise<ModelReport> {
         report.ask.push({ id: c.id, lang: c.lang, question: c.question, checks: [], error: (err as Error).message, ms: Date.now() - t0 })
         console.log(`ERROR ${(err as Error).message}`)
       }
+      saveProgress()
       await sleep(delayMs)
     }
   }
@@ -367,14 +388,16 @@ function markdown(reports: ModelReport[]) {
   return lines.join('\n')
 }
 
-const reports: ModelReport[] = []
-for (const model of models) reports.push(await evaluate(model))
+
+// The report is saved after every question, so stopping early (Ctrl+C)
+// keeps everything done so far.
+for (const model of models) {
+  reports.push(await evaluate(model))
+  saveProgress()
+}
 
 console.log('\n=== Summary ===')
 console.table(reports.map(summarize))
 
-const outDir = join(here, 'results')
-mkdirSync(outDir, { recursive: true })
-const file = join(outDir, `${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}_${models.join('_vs_')}.md`)
 writeFileSync(file, markdown(reports))
 console.log(`\nReport saved: ${file}`)

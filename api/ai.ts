@@ -91,6 +91,49 @@ function weekdayOf(date: string): string {
   })
 }
 
+function addDays(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Monday–Sunday range of the week containing `date` (+ offset weeks). */
+export function weekRange(date: string, offsetWeeks = 0) {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay() // 0 = Sunday
+  const monday = addDays(date, -((day + 6) % 7) + offsetWeeks * 7)
+  return `${monday} to ${addDays(monday, 6)}`
+}
+
+function weekendRange(date: string) {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay()
+  const monday = addDays(date, -((day + 6) % 7))
+  return `${addDays(monday, 5)} and ${addDays(monday, 6)}`
+}
+
+/** A date the way people write it in chat, e.g. "Friday 6 November",
+ *  "Jumaat, 6 November", "11월 6일 (금)". */
+export function niceDate(date: string, lang: 'en' | 'ms' | 'ko' = 'en') {
+  const d = new Date(`${date}T12:00:00Z`)
+  if (lang === 'ko') return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' })
+  if (lang === 'ms') return d.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+}
+
+const MALAY_WORDS = /\b(ada|apa|bila|mana|saya|aku|nak|tak|ni|tu|dah|boleh|kat|ke|macam|berapa|siapa|kenapa|bagaimana|untuk|dengan|minggu|esok|hari|malam|petang|pagi|jom|korang|kita|awak|tolong|terima kasih|sertai|daftar)\b/gi
+
+/** Which language the student wrote in, so the reply can match it.
+ *  Korean if it has Hangul; Malay if it has at least two common Malay
+ *  words (or one in a short message); otherwise English. */
+export function detectLanguage(textIn: string): 'en' | 'ms' | 'ko' {
+  if (/[가-힣]/.test(textIn)) return 'ko'
+  const words = textIn.trim().split(/\s+/).length
+  const malayHits = (textIn.match(MALAY_WORDS) ?? []).length
+  if (malayHits >= 2 || (malayHits === 1 && words <= 4)) return 'ms'
+  return 'en'
+}
+
+const LANGUAGE_NAME = { en: 'English', ms: 'Malaysian Malay', ko: 'Korean (polite 해요체)' } as const
+
 function isRealDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const d = new Date(`${value}T00:00:00Z`)
@@ -152,7 +195,9 @@ export async function callModel(call: ModelCall): Promise<string> {
     if (useSystemField) body.systemInstruction = { parts: [{ text: call.system }] }
 
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 30_000)
+    // Slow models (e.g. Gemma on the free tier) can be given longer with
+    // AI_TIMEOUT_MS when running the test set.
+    const timer = setTimeout(() => controller.abort(), Number(process.env.AI_TIMEOUT_MS) || 30_000)
 
     try {
       return await doFetch(`${API_BASE}/${encodeURIComponent(call.model)}:generateContent`, {
@@ -261,6 +306,7 @@ The notes may mix English, Malay (including short forms and slang such as "ptg" 
 
 Rules:
 - Today is ${weekdayOf(today)}, ${today} (Korea time). Turn relative dates ("this friday", "esok", "next sat", "다음 주 토요일") into YYYY-MM-DD. A weekday name alone means its next occurrence on or after today. "next <weekday>" means the one in the following week.
+- Malay custom: "malam <day>" is the evening BEFORE that day. "malam jumaat" = THURSDAY night, "malam sabtu" = Friday night, "malam minggu"/"malam ahad" = Saturday night. ("malam ni" = tonight.)
 - Times are 24-hour HH:MM. "8pm" = 20:00, "ptg 3" = 15:00, "mlm 9" = 21:00, "lepas isyak" ≈ 20:30 (only if nothing more precise is given).
 - NEVER invent details. If something is not in the notes, use null (dates, times, capacity) or "" (text) and put the field name in "missing". Do not guess a capacity, end time, deadline or location.
 - title: short and catchy, in English, Title Case, max 60 characters.
@@ -393,7 +439,9 @@ export function announcePrompts(event: EventForAnnouncement, tone: Tone) {
   const facts = {
     title: event.title,
     category: event.category,
-    date: `${event.event_date} (${weekdayOf(event.event_date)})`,
+    date_en: niceDate(event.event_date, 'en'),
+    date_ms: niceDate(event.event_date, 'ms'),
+    date_ko: niceDate(event.event_date, 'ko'),
     time: event.end_time
       ? `${event.start_time.slice(0, 5)}–${event.end_time.slice(0, 5)}`
       : event.start_time.slice(0, 5),
@@ -402,7 +450,9 @@ export function announcePrompts(event: EventForAnnouncement, tone: Tone) {
     what_to_bring: event.bring || undefined,
     notes: event.notes || undefined,
     places_available: event.capacity ?? undefined,
-    rsvp_by: event.rsvp_deadline ?? undefined,
+    rsvp_by: event.rsvp_deadline
+      ? { en: niceDate(event.rsvp_deadline, 'en'), ms: niceDate(event.rsvp_deadline, 'ms'), ko: niceDate(event.rsvp_deadline, 'ko') }
+      : undefined,
   }
 
   const system = `You write group-chat announcements (KakaoTalk / WhatsApp) for events of the PPMK Community Hub, the Malaysian student community at Hanyang University ERICA in Korea.
@@ -414,7 +464,7 @@ Write the SAME announcement three times:
 
 Rules:
 - Tone: ${TONE_GUIDE[tone]}
-- Include the event name, the day and date, the time, and the place. Mention what to bring, places available and the RSVP deadline only if given.
+- Include the event name, the day and date, the time, and the place. Write the date exactly as given for that language (date_en / date_ms / date_ko), never as 2026-11-06. Mention what to bring, places available and the RSVP deadline only if given.
 - Use ONLY the facts given. Never invent food, prizes, fees, speakers, dress codes or anything else.
 - Keep names of places and the event title as given (you may add a translation in brackets).
 - Do NOT include any link or URL; the app adds the RSVP link at the end automatically.
@@ -565,7 +615,8 @@ export function askContextText(ctx: AskContext) {
       ref,
       title: e.title,
       category: e.category,
-      date: `${e.event_date} (${weekdayOf(e.event_date)})`,
+      date: e.event_date,
+      day: niceDate(e.event_date, 'en'),
       time: e.end_time ? `${e.start_time.slice(0, 5)}–${e.end_time.slice(0, 5)}` : e.start_time.slice(0, 5),
       place: e.location,
       about: e.description ? e.description.slice(0, 240) : undefined,
@@ -597,12 +648,19 @@ export function askPrompts(question: string, history: ChatTurn[], ctx: AskContex
 
   const system = `You are "Ask the Hub", the helper inside the PPMK Community Hub app for Malaysian students at Hanyang University ERICA (Ansan, Korea).
 
-Today is ${weekdayOf(ctx.today)}, ${ctx.today} (Korea time). "This week" = Monday to Sunday of the current week. "Weekend" = Saturday and Sunday.
+Today is ${weekdayOf(ctx.today)}, ${ctx.today} (Korea time).
+Date ranges (use these exactly, in every language: "this week" = "minggu ni/minggu ini" = "이번 주"):
+- this week: ${weekRange(ctx.today, 0)} (Monday to Sunday, including the weekend)
+- this weekend: ${weekendRange(ctx.today)}
+- next week: ${weekRange(ctx.today, 1)}
+When asked about a period, list EVERY event in that period, in date order.
 
 You answer ONLY from the HUB DATA below: upcoming events (that this student can see), clubs, and the student's own RSVPs (my_rsvp). Rules:
 - Never invent events, times, places, prices, contacts or anything else. If the data doesn't have the answer, say so briefly and suggest asking the organizers or checking the Events page.
-- Reply in the same language as the student's latest message (English, Malay or Korean). Malay = natural Malaysian Malay, not Indonesian. Korean = polite 해요체.
+- Reply ONLY in the language named in "Reply language" under the student's message, even when apologising or refusing, and even if the hub data contains words in other languages. Malay = natural Malaysian Malay, not Indonesian. Korean = polite 해요체.
 - Be short and friendly: at most ~100 words. Plain text, line breaks and "•" bullets are fine, no markdown headings or tables. Give date, time and place for each event you mention.
+- Write dates the natural way in the reply language (e.g. "Thu 5 Nov", "Khamis, 5 Nov", "11월 5일 (목)"), never as 2026-11-05. Translate weekday names too.
+- When asked about their RSVPs / what they joined, list EVERY event where my_rsvp is "going" or "maybe", and say which is which.
 - List the refs of the events you mention in "events" (max 5, most relevant first) and of clubs in "clubs". The app shows those as tappable cards, so you can say "tap the card below to RSVP".
 - You can't RSVP, change anything or contact anyone for the student; explain how they can do it in the app.
 - You know nothing about other students. Never reveal or guess anyone's personal information (phone numbers, who is going, etc.).
@@ -619,7 +677,8 @@ ${data}`
     .map((t) => `${t.role === 'user' ? 'Student' : 'Hub'}: ${t.text.slice(0, 500)}`)
     .join('\n')
 
-  const prompt = `${past ? `Conversation so far:\n${past}\n\n` : ''}Student's new message:\n"""\n${question}\n"""`
+  const lang = detectLanguage(question)
+  const prompt = `${past ? `Conversation so far:\n${past}\n\n` : ''}Student's new message:\n"""\n${question}\n"""\n\nReply language: ${LANGUAGE_NAME[lang]}`
   return { system, prompt, eventRefs, clubRefs }
 }
 
@@ -669,11 +728,6 @@ export async function answerQuestion(opts: {
   return normalizeAsk(parseJsonObject(raw), eventRefs, clubRefs)
 }
 
-function addDays(date: string, days: number) {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
 
 function userIdFromToken(token: string): string {
   try {
