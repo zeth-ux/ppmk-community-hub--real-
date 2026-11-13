@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "demo": "vite --mode demo --open",
+    "build:demo": "vite build --mode demo --outDir dist-demo",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -14,6 +16,7 @@
     "ai:eval": "tsx --env-file=.env.local scripts/ai-eval/run.ts"
   },
   "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
     "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.52.0",

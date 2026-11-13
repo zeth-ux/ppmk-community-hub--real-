@@ -1,15 +1,19 @@
-import { useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { CalendarPlus, Plus, Settings } from 'lucide-react'
 
-import { listEvents, listRsvpCounts } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+
+import { listClubs, listEvents, listMyClubMemberships, listRsvpCounts } from '../lib/api'
 import { formatDate, isPast } from '../lib/format'
-import type { HubEvent } from '../lib/types'
+import { CLUB_ROLE_LABEL, type HubEvent } from '../lib/types'
+import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import EventForm from '../components/organizer/EventForm'
 import EventManagePanel from '../components/organizer/EventManagePanel'
 import { ErrorBox, PageHeader, Spinner, buttonPrimary, card } from '../components/ui'
 
 export default function OrganizerPage() {
+  usePageMeta('Organizer tools')
   const [params, setParams] = useSearchParams()
   const selectedId = params.get('event')
   const mode = params.get('new') === '1' ? 'new' : params.get('edit') === '1' ? 'edit' : 'view'
@@ -50,6 +54,8 @@ export default function OrganizerPage() {
 
       <ErrorBox>{error}</ErrorBox>
 
+      {mode === 'view' && !selected && <MyLedClubs />}
+
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         <aside className={`${card} h-fit p-3 ${mode !== 'view' || selected ? 'hidden lg:block' : ''}`}>
           {loading ? (
@@ -80,7 +86,7 @@ export default function OrganizerPage() {
 
         <div className="min-w-0">
           {mode === 'new' ? (
-            <EventForm onSaved={handleSaved} onCancel={() => go({})} />
+            <EventForm defaultClubId={params.get('club') ?? undefined} onSaved={handleSaved} onCancel={() => go({})} />
           ) : mode === 'edit' && selected ? (
             <EventForm
               key={selected.id}
@@ -109,7 +115,7 @@ export default function OrganizerPage() {
             </>
           ) : (
             !loading && (
-              <div className="hidden rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 lg:block">
+              <div className="hidden rounded-2xl border border-dashed border-slate-300 bg-surface p-10 text-center text-sm text-slate-500 lg:block">
                 Pick an event on the left to see responses, or create a new one.
               </div>
             )
@@ -135,7 +141,7 @@ function EventGroup({
 }) {
   return (
     <div className="mb-2">
-      <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+      <p className="px-3 pb-1 pt-2 text-xs font-bold text-slate-400">
         {title}
       </p>
       {events.length === 0 && <p className="px-3 py-2 text-sm text-slate-400">None</p>}
@@ -156,5 +162,39 @@ function EventGroup({
         </button>
       ))}
     </div>
+  )
+}
+
+/** Club leaders: quick links to run their club from here. */
+function MyLedClubs() {
+  const { session } = useAuth()
+  const userId = session!.user.id
+  const { data } = useLoader(async () => {
+    const [mine, clubs] = await Promise.all([listMyClubMemberships(userId).catch(() => []), listClubs()])
+    return mine
+      .filter((m) => m.status === 'active' && (m.role === 'president' || m.role === 'vice_president'))
+      .map((m) => ({ ...m, club: clubs.find((c) => c.id === m.club_id) }))
+      .filter((m) => m.club)
+  }, [userId])
+
+  if (!data || data.length === 0) return null
+
+  return (
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {data.map((m) => (
+        <div key={m.club_id} className={`${card} p-4`}>
+          <p className="text-xs font-semibold text-primary">You lead · {CLUB_ROLE_LABEL[m.role]}</p>
+          <Link to={`/clubs/${m.club_id}`} className="mt-0.5 block font-bold hover:text-primary">{m.club!.name}</Link>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm">
+            <Link to={`/organizer?new=1&club=${m.club_id}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-primary hover:bg-red-100">
+              <CalendarPlus size={15} /> Club event
+            </Link>
+            <Link to={`/clubs/${m.club_id}?tab=manage`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200">
+              <Settings size={15} /> Manage
+            </Link>
+          </div>
+        </div>
+      ))}
+    </section>
   )
 }

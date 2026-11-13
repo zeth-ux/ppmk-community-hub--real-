@@ -11,7 +11,7 @@ import type { Session } from '@supabase/supabase-js'
 
 import { supabase } from '../lib/supabase'
 import { getMyProfile } from '../lib/api'
-import { isProfileComplete } from '../lib/format'
+import { isMemberProfile, isProfileComplete } from '../lib/format'
 import type { Profile } from '../lib/types'
 
 type AuthContextValue = {
@@ -20,6 +20,9 @@ type AuthContextValue = {
   session: Session | null
   profile: Profile | null
   profileComplete: boolean
+  /** A PPMK member (not a visitor) with a complete profile. */
+  isMember: boolean
+  isVisitor: boolean
   isOrganizer: boolean
   isAdmin: boolean
   setProfile: (profile: Profile | null) => void
@@ -104,6 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile: current,
       profileComplete: isProfileComplete(current),
+      isMember: isMemberProfile(current),
+      isVisitor: current?.account_type === 'visitor' && role === 'student',
       isOrganizer: role === 'organizer' || role === 'admin',
       isAdmin: role === 'admin',
       setProfile,

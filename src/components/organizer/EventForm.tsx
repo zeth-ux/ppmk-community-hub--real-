@@ -39,7 +39,7 @@ type FormState = {
   audience_batches: number[]
 }
 
-function toForm(event?: HubEvent): FormState {
+function toForm(event?: HubEvent, defaultClubId = ''): FormState {
   return {
     title: event?.title ?? '',
     category: event?.category ?? 'Social',
@@ -52,7 +52,7 @@ function toForm(event?: HubEvent): FormState {
     notes: event?.notes ?? '',
     capacity: event?.capacity ? String(event.capacity) : '',
     rsvp_deadline: event?.rsvp_deadline ?? '',
-    club_id: event?.club_id ?? '',
+    club_id: event?.club_id ?? defaultClubId,
     audience: event?.audience ?? 'everyone',
     audience_batches: event?.audience_batches ?? [],
   }
@@ -60,14 +60,17 @@ function toForm(event?: HubEvent): FormState {
 
 export default function EventForm({
   event,
+  defaultClubId,
   onSaved,
   onCancel,
 }: {
   event?: HubEvent
+  /** Pre-select a club (when a club leader taps "Create event" on their club page). */
+  defaultClubId?: string
   onSaved: (event: HubEvent) => void
   onCancel: () => void
 }) {
-  const [form, setForm] = useState<FormState>(() => toForm(event))
+  const [form, setForm] = useState<FormState>(() => toForm(event, defaultClubId))
   const [invited, setInvited] = useState<Set<string>>(new Set())
   const [memberSearch, setMemberSearch] = useState('')
   const [saving, setSaving] = useState(false)
@@ -366,7 +369,7 @@ export default function EventForm({
               className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 form.audience === value
                   ? 'border-primary bg-red-50 text-primary'
-                  : 'border-slate-200 bg-white text-slate-600'
+                  : 'border-slate-200 bg-surface text-slate-600'
               }`}
             >
               {label}
@@ -382,7 +385,7 @@ export default function EventForm({
             {batches.map((batch) => (
               <label
                 key={batch}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm"
               >
                 <input
                   type="checkbox"
@@ -413,7 +416,7 @@ export default function EventForm({
               {visibleMembers.map((member) => (
                 <label
                   key={member.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2 text-sm"
+                  className="flex cursor-pointer items-center gap-3 rounded-lg bg-surface px-3 py-2 text-sm"
                 >
                   <input
                     type="checkbox"

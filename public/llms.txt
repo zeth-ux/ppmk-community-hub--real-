@@ -1,0 +1,15 @@
+# PPMK Community Hub
+
+> The community website of PPMK (Persatuan Pelajar Malaysia Korea, the Malaysian Students' Association in Korea), piloted with EMSU, the Malaysian student community at Hanyang University ERICA in Ansan.
+
+Malaysian students sign in once with their email and a 6-digit code, then RSVP to events with one tap, join clubs and use the discussion board. Visitors and tourists can read and post in the public "Explore Korea" topics (halal food, hidden gems, cafés, trips and budgets).
+
+## Public pages
+- [Home](/): what PPMK and the hub are, upcoming open events, clubs
+- [PPMK](/ppmk): who PPMK is, the High Committee, the PPMK calendar, MARA and JPA contacts (contact details for members only), FAQ
+- [Discussions](/discuss): Explore Korea topics are public; Student life and Team up are for members
+- [Opportunities](/explore): external events and programmes in Korea, Asia, worldwide and online
+- [Privacy](/privacy): what data is stored and who can see it
+
+## Not public
+Events, clubs, profiles and admin tools need a member account. Personal details (names, phone numbers, student IDs) are never shown publicly.

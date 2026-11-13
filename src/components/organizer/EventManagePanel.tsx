@@ -225,7 +225,7 @@ export default function EventManagePanel({
         ) : (
           <div className="-mx-5 mt-3 overflow-x-auto sm:-mx-6">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="bg-slate-50 text-xs text-slate-500">
                 <tr>
                   <th className="px-5 py-3 sm:px-6">Name</th>
                   <th className="px-3 py-3">Student ID</th>

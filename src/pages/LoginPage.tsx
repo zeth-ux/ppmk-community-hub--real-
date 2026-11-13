@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react'
+import { usePageMeta } from '../lib/usePageMeta'
 
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/format'
 import { safeNext } from '../components/guards'
+import CodeInput from '../components/CodeInput'
 import {
   ErrorBox,
   Spinner,
@@ -15,6 +17,7 @@ import {
 } from '../components/ui'
 
 export default function LoginPage() {
+  usePageMeta('Sign in', 'Sign in with your email and a 6-digit code. No password.')
   const { loading, session } = useAuth()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
@@ -60,14 +63,14 @@ export default function LoginPage() {
     setStep('code')
   }
 
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault()
+  async function verifyCode(event?: FormEvent, typed = code) {
+    event?.preventDefault()
     setError('')
 
-    const token = code.replace(/\s/g, '')
+    const token = typed.replace(/\s/g, '')
 
-    if (!/^\d{6,10}$/.test(token)) {
-      setError('Enter the code from the email (numbers only).')
+    if (!/^\d{6}$/.test(token)) {
+      setError('Enter the 6-digit code from the email.')
       return
     }
 
@@ -131,27 +134,27 @@ export default function LoginPage() {
               <h1 className="text-2xl font-bold">Check your email</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 We sent a message to <strong className="text-slate-800">{email}</strong>.
-                Tap the link in it, <em>or</em> type the code here. The code is
-                handy if you opened this page inside KakaoTalk or WhatsApp.
+                Tap the link in it, <em>or</em> type the 6-digit code here. The
+                code is handy if you opened this page inside KakaoTalk or WhatsApp.
               </p>
             </div>
 
-            <label className="block text-sm font-medium">
-              Code from the email
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoFocus
+            <div>
+              <p className="mb-2 text-sm font-medium">6-digit code from the email</p>
+              <CodeInput
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="123456"
-                className={`${inputClass} text-center text-lg tracking-[0.4em]`}
+                onChange={(v) => {
+                  setCode(v)
+                  setError('')
+                }}
+                onComplete={(v) => void verifyCode(undefined, v)}
+                disabled={busy}
               />
-            </label>
+            </div>
 
             <ErrorBox>{error}</ErrorBox>
 
-            <button type="submit" disabled={busy} className={`${buttonPrimary} w-full`}>
+            <button type="submit" disabled={busy || code.length !== 6} className={`${buttonPrimary} w-full`}>
               {busy ? 'Checking…' : 'Sign in'}
             </button>
 

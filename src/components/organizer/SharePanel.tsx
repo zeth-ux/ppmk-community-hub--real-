@@ -3,7 +3,7 @@ import { AlertTriangle, Check, Copy, Sparkles } from 'lucide-react'
 
 import { saveAnnouncements } from '../../lib/api'
 import { aiWriteAnnouncements, announcementSource, type AiTone } from '../../lib/ai'
-import { eventTimeRange, formatDate, friendlyError, rsvpDeadline } from '../../lib/format'
+import { eventTimeRange, formatDate, friendlyError, rsvpDeadline, appUrl } from '../../lib/format'
 import type { Announcements, HubEvent } from '../../lib/types'
 import { ErrorBox, buttonPrimary, buttonSecondary, card } from '../ui'
 
@@ -45,7 +45,7 @@ export default function SharePanel({
   event: HubEvent
   onSaved: () => void
 }) {
-  const link = `${window.location.origin}/events/${event.id}`
+  const link = appUrl(`/events/${event.id}`)
 
   // `?? null` also covers databases where 0003_ai.sql hasn't been run yet.
   const initial = event.announcements?.en ? event.announcements : null
@@ -152,7 +152,7 @@ export default function SharePanel({
           <p className="mr-auto text-sm font-bold text-violet-950">
             {saved ? 'AI announcement in 3 languages' : 'Write it with AI in English, Malay & Korean'}
           </p>
-          <div className="flex rounded-lg bg-white p-0.5" role="radiogroup" aria-label="Tone">
+          <div className="flex rounded-lg bg-surface p-0.5" role="radiogroup" aria-label="Tone">
             {TONES.map((t) => (
               <button
                 key={t.id}
@@ -224,7 +224,7 @@ export default function SharePanel({
             rows={8}
             lang={tab}
             aria-label={`Announcement in ${TABS.find((t) => t.id === tab)?.label}`}
-            className="w-full rounded-t-xl border border-b-0 border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none focus:border-primary"
+            className="w-full rounded-t-xl border border-b-0 border-slate-200 bg-surface p-4 text-sm leading-6 text-slate-800 outline-none focus:border-primary"
           />
           <pre className="-mt-1 whitespace-pre-wrap rounded-b-xl border border-t-0 border-slate-200 bg-slate-50 px-4 pb-3 pt-2 font-sans text-xs leading-5 text-slate-500">
             {rsvpFooter(tab, event, link)}

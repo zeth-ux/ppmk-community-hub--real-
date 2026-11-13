@@ -1,12 +1,14 @@
 import { ExternalLink } from 'lucide-react'
 import { SURVEY_URL } from '../config'
+import { usePageMeta } from '../lib/usePageMeta'
 
 export default function SurveyPage() {
+  usePageMeta('Feedback')
   const surveyReady = !SURVEY_URL.includes('REPLACE_ME')
 
   return (
     <div className="mx-auto max-w-3xl">
-      <section className="rounded-xl border bg-white p-6 md:p-8">
+      <section className="rounded-xl border bg-surface p-6 md:p-8">
         <p className="text-sm font-semibold text-primary">Feedback</p>
 
         <h1 className="mt-1 text-3xl font-bold">

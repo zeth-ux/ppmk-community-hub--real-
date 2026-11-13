@@ -28,13 +28,13 @@ export default function EventCard({
   return (
     <Link
       to={`/events/${event.id}`}
-      className={`group flex overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-primary hover:shadow-md ${
+      className={`group flex overflow-hidden rounded-2xl border border-slate-200 bg-surface transition hover:border-primary ${
         compact ? 'flex-row' : 'flex-col'
       } ${isPast(event) ? 'opacity-70' : ''}`}
     >
       <img
         src={eventImage(event)}
-        alt=""
+        alt={`${event.category} event: ${event.title}`}
         loading="lazy"
         className={compact ? 'h-auto w-24 shrink-0 object-cover sm:w-32' : 'h-40 w-full object-cover'}
         onError={(e) => {
@@ -57,7 +57,7 @@ export default function EventCard({
           )}
 
           {full && !compact && (
-            <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-semibold text-white">
+            <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-on-ink">
               Full
             </span>
           )}
