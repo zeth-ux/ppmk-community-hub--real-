@@ -42,7 +42,7 @@ export default function MyRsvpsList({
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-surface p-6 text-center text-sm text-slate-500">
           You haven't joined any upcoming events yet.{' '}
           <Link to="/events" className="font-semibold text-primary">
             Browse events

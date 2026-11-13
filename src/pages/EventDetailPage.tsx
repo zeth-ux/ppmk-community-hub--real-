@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
   Backpack,
   CalendarClock,
   CheckCircle2,
@@ -14,9 +13,11 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
-import { getEvent, listMyRsvps, listRsvpCounts, setMyRsvp } from '../lib/api'
+import { getEvent, listClubs, listMyRsvps, listRsvpCounts, setMyRsvp } from '../lib/api'
 import {
   STATUS_LABEL,
+  appUrl,
+  mapLinks,
   eventImage,
   eventTimeRange,
   formatDate,
@@ -26,6 +27,8 @@ import {
 } from '../lib/format'
 import type { RsvpStatus } from '../lib/types'
 import { useLoader } from '../lib/useLoader'
+import Breadcrumbs from '../components/Breadcrumbs'
+import { usePageMeta } from '../lib/usePageMeta'
 import { ErrorBox, Spinner, buttonSecondary, card, inputClass } from '../components/ui'
 
 const OPTIONS: { value: RsvpStatus; label: string; active: string }[] = [
@@ -40,17 +43,20 @@ export default function EventDetailPage() {
   const userId = session!.user.id
 
   const { data, setData, loading, error } = useLoader(async () => {
-    const [event, rsvps, counts] = await Promise.all([
+    const [event, rsvps, counts, clubs] = await Promise.all([
       getEvent(id),
       listMyRsvps(userId),
       listRsvpCounts(),
+      listClubs().catch(() => []),
     ])
     return {
       event,
+      club: clubs.find((c) => c.id === event?.club_id) ?? null,
       mine: rsvps.find((r) => r.event_id === id) ?? null,
       counts: counts[id] ?? { event_id: id, attending: 0, maybe: 0, not_attending: 0 },
     }
   }, [id, userId])
+  usePageMeta(data?.event?.title, data?.event?.description)
 
   const [comment, setComment] = useState<string | null>(null)
   const [saving, setSaving] = useState<RsvpStatus | 'comment' | null>(null)
@@ -63,7 +69,7 @@ export default function EventDetailPage() {
 
   if (!data?.event) {
     return (
-      <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-8 text-center">
+      <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-surface p-8 text-center">
         <h1 className="text-xl font-bold">Event not found</h1>
         <p className="text-sm text-slate-500">
           It may have been removed, or it's only open to certain batches or
@@ -111,7 +117,7 @@ export default function EventDetailPage() {
   }
 
   async function share() {
-    const url = `${window.location.origin}/events/${event.id}`
+    const url = appUrl(`/events/${event.id}`)
     const text = `${event.title}: ${formatDate(event.event_date)}, ${eventTimeRange(event)} at ${event.location}. RSVP here:`
 
     if (navigator.share) {
@@ -131,13 +137,7 @@ export default function EventDetailPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <Link
-          to="/events"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary"
-        >
-          <ArrowLeft size={16} />
-          All events
-        </Link>
+        <Breadcrumbs items={[['Events', '/events'], [event.title]]} />
 
         <div className="flex gap-2">
           <button onClick={share} className={buttonSecondary}>
@@ -156,7 +156,7 @@ export default function EventDetailPage() {
       <article className={`${card} overflow-hidden`}>
         <img
           src={eventImage(event)}
-          alt=""
+          alt={`${event.title} event banner`}
           className="h-44 w-full object-cover sm:h-60"
           onError={(e) => {
             e.currentTarget.style.display = 'none'
@@ -165,10 +165,23 @@ export default function EventDetailPage() {
 
         <div className="space-y-6 p-5 sm:p-7">
           <div>
-            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-primary">
-              {event.category}
-            </span>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{event.title}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to={`/events?category=${encodeURIComponent(event.category)}`}
+                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-primary hover:bg-red-100"
+              >
+                {event.category}
+              </Link>
+              {data.club && (
+                <Link
+                  to={`/clubs/${data.club.id}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                >
+                  <Users size={12} /> Hosted by {data.club.name}
+                </Link>
+              )}
+            </div>
+            <h1 className="mt-4 font-display text-5xl sm:text-6xl">{event.title}</h1>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -179,6 +192,14 @@ export default function EventDetailPage() {
             </InfoTile>
             <InfoTile icon={<MapPin size={18} />} label="Where">
               {event.location}
+              <span className="mt-1.5 flex gap-3 text-xs font-semibold">
+                <a href={mapLinks(event.location).naver} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  Naver Map
+                </a>
+                <a href={mapLinks(event.location).kakao} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  Kakao Map
+                </a>
+              </span>
             </InfoTile>
             <InfoTile icon={<Users size={18} />} label="Who's coming">
               {counts.attending} going · {counts.maybe} maybe
@@ -246,7 +267,7 @@ export default function EventDetailPage() {
                     disabled={saving !== null || blocked}
                     aria-pressed={selected}
                     className={`rounded-xl border-2 px-2 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      selected ? option.active : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      selected ? option.active : 'border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
                     }`}
                   >
                     {saving === option.value ? 'Saving…' : blocked ? 'Full' : option.label}

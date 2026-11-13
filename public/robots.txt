@@ -1,0 +1,9 @@
+# PPMK Community Hub
+# Public pages can be indexed. Personal and admin pages can't.
+User-agent: *
+Allow: /
+Disallow: /me
+Disallow: /admin
+Disallow: /organizer
+Disallow: /login
+Disallow: /api/

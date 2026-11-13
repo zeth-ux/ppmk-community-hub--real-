@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { listClubs, listEvents, listMyRsvps, listRsvpCounts } from '../lib/api'
 import { aiAsk, type ChatTurn } from '../lib/ai'
 import { firstName } from '../lib/format'
+import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import EventCard from '../components/EventCard'
 
@@ -36,6 +37,7 @@ function loadSaved(): Message[] {
 }
 
 export default function AskPage() {
+  usePageMeta('Ask the Hub')
   const { session, profile } = useAuth()
   const userId = session!.user.id
 
@@ -152,7 +154,7 @@ export default function AskPage() {
                 <button
                   key={s}
                   onClick={() => void ask(s)}
-                  className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-800 hover:border-violet-400"
+                  className="rounded-full border border-violet-200 bg-surface px-3 py-1.5 text-sm text-violet-800 hover:border-violet-400"
                 >
                   {s}
                 </button>
@@ -174,7 +176,7 @@ export default function AskPage() {
                 className={`max-w-[92%] whitespace-pre-line rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-6 ${
                   m.error
                     ? 'border border-red-100 bg-red-50 text-red-700'
-                    : 'border border-slate-200 bg-white text-slate-800'
+                    : 'border border-slate-200 bg-surface text-slate-800'
                 }`}
               >
                 {m.text}
@@ -206,7 +208,7 @@ export default function AskPage() {
                       <Link
                         key={club.id}
                         to="/clubs"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold hover:border-primary hover:text-primary"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-sm font-semibold hover:border-primary hover:text-primary"
                       >
                         <Users size={14} />
                         {club.name}
@@ -239,7 +241,7 @@ export default function AskPage() {
 
       <form
         onSubmit={onSubmit}
-        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-5 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg md:bottom-4"
+        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-5 rounded-2xl border border-slate-200 bg-surface p-2 md:bottom-4"
       >
         <div className="flex items-end gap-2">
           <textarea

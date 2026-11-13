@@ -3,18 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#ac0024" />
-    <meta name="description" content="Fill in your details once. Join every PPMK/EMSU event with one tap." />
+    <meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14100e" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Events, clubs, halal makan and hidden gems for Malaysian students in Korea. Run by PPMK and EMSU at Hanyang ERICA." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Link previews (KakaoTalk, WhatsApp, Instagram, X). These need a full
+         address: change it here when PPMK gets its own domain. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PPMK Community Hub" />
+    <meta property="og:title" content="PPMK Community Hub: jauh di mata, dekat di hati" />
+    <meta property="og:description" content="Events, clubs, halal makan and hidden gems for Malaysian students in Korea." />
+    <meta property="og:url" content="https://ppmk-community-hub-real.vercel.app/" />
+    <meta property="og:image" content="https://ppmk-community-hub-real.vercel.app/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PPMK Community Hub: Jauh di mata, dekat di hati." />
+    <meta property="og:locale" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Persatuan Pelajar Malaysia Korea (PPMK)",
+        "alternateName": ["PPMK", "Malaysian Students' Association in Korea"],
+        "description": "Non-profit welfare association for Malaysian students in South Korea.",
+        "url": "https://ppmk-community-hub-real.vercel.app/",
+        "logo": "https://ppmk-community-hub-real.vercel.app/icon-512.png",
+        "areaServed": "KR"
+      }
+    </script>
+
 
     <title>PPMK Community Hub</title>
+
+    <!-- Apply the saved light/dark theme before the page draws (no flash). -->
+    <script>
+      try {
+        var t = localStorage.getItem('ppmk-theme')
+        if (t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+        }
+      } catch (e) {}
+    </script>
   </head>
 
   <body>

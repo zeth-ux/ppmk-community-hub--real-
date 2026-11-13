@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { listEvents, listMyRsvps, listRsvpCounts } from '../lib/api'
 import { eventTimeRange, isPast, todayKst } from '../lib/format'
 import { CATEGORIES } from '../lib/types'
+import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import EventCard from '../components/EventCard'
 import { EmptyState, ErrorBox, PageHeader, Spinner, buttonPrimary } from '../components/ui'
@@ -13,6 +14,7 @@ import { EmptyState, ErrorBox, PageHeader, Spinner, buttonPrimary } from '../com
 type View = 'upcoming' | 'calendar' | 'past'
 
 export default function EventsPage() {
+  usePageMeta('Events', 'Upcoming PPMK and EMSU events. RSVP with one tap.')
   const { session, isOrganizer } = useAuth()
   const userId = session!.user.id
 
@@ -30,7 +32,8 @@ export default function EventsPage() {
   }, [userId])
 
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
+  const [params] = useSearchParams()
+  const [category, setCategory] = useState(() => params.get('category') ?? 'All')
   const [view, setView] = useState<View>('upcoming')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [month, setMonth] = useState(() => {
@@ -94,7 +97,7 @@ export default function EventsPage() {
 
       <Link
         to="/explore"
-        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:border-primary md:hidden"
+        className="flex items-center justify-between rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm font-semibold text-slate-700 hover:border-primary md:hidden"
       >
         Explore events around Korea
         <span aria-hidden>→</span>
@@ -111,7 +114,7 @@ export default function EventsPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search events or places…"
             aria-label="Search events"
-            className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
+            className="w-full rounded-xl border border-slate-200 bg-surface py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
           />
         </div>
 
@@ -123,7 +126,7 @@ export default function EventsPage() {
               className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
                 category === item
                   ? 'bg-primary text-white'
-                  : 'border border-slate-200 bg-white text-slate-600'
+                  : 'border border-slate-200 bg-surface text-slate-600'
               }`}
             >
               {item}
@@ -146,7 +149,7 @@ export default function EventsPage() {
             aria-selected={view === value}
             onClick={() => setView(value)}
             className={`flex-1 rounded-lg py-2 text-sm font-semibold ${
-              view === value ? 'bg-white text-primary shadow-sm' : 'text-slate-500'
+              view === value ? 'bg-surface text-primary' : 'text-slate-500'
             }`}
           >
             {label}
@@ -178,7 +181,7 @@ export default function EventsPage() {
           </EmptyState>
         )
       ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-2xl border border-slate-200 bg-surface p-4">
           <div className="mb-4 flex items-center justify-between">
             <button
               aria-label="Previous month"
@@ -233,7 +236,7 @@ export default function EventsPage() {
                   {count > 0 && (
                     <span
                       className={`absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${
-                        selected ? 'bg-white' : 'bg-primary'
+                        selected ? 'bg-surface' : 'bg-primary'
                       }`}
                     />
                   )}

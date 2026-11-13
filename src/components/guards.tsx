@@ -1,21 +1,32 @@
 import type { ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Compass, Lock, MessagesSquare } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
-import { Spinner } from './ui'
+import { Spinner, buttonPrimary, buttonSecondary } from './ui'
 
 /**
- * Signed-in users only. Also makes sure the one-time profile is filled in
- * before anything else (the profile page itself is exempt).
+ * Who may open a page:
+ * - 'member'  (default) PPMK members with a complete profile
+ * - 'account' anyone signed in with a finished profile (visitors too)
+ * - 'guest'   everyone, even signed out (the page limits what it shows)
+ * Signed-in users always finish their one-time profile first.
  */
-export function RequireAuth({ children }: { children: ReactNode }) {
-  const { loading, session, profileComplete } = useAuth()
+export function RequireAuth({
+  children,
+  allow = 'member',
+}: {
+  children: ReactNode
+  allow?: 'member' | 'account' | 'guest'
+}) {
+  const { loading, session, profileComplete, isMember } = useAuth()
   const location = useLocation()
   const here = location.pathname + location.search
 
   if (loading) return <Spinner />
 
   if (!session) {
+    if (allow === 'guest') return <>{children}</>
     return <Navigate to={`/login?next=${encodeURIComponent(here)}`} replace />
   }
 
@@ -23,7 +34,39 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to={`/me?welcome=1&next=${encodeURIComponent(here)}`} replace />
   }
 
+  if (allow === 'member' && !isMember) return <MembersOnly />
+
   return <>{children}</>
+}
+
+export function MembersOnly({ compact = false }: { compact?: boolean }) {
+  const { session } = useAuth()
+  return (
+    <div className={`mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface text-center ${compact ? 'p-6' : 'p-8 sm:p-10'}`}>
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-primary">
+        <Lock size={22} />
+      </div>
+      <p className="mt-4 text-lg font-bold">For PPMK members</p>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Events, clubs and these discussions are for Malaysian students in PPMK. Visitors can still share and find
+        food, hidden gems and trip ideas in <strong>Explore Korea</strong>.
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        <Link to="/discuss?g=explore" className={buttonPrimary}>
+          <MessagesSquare size={16} /> Explore Korea
+        </Link>
+        <Link to="/explore" className={buttonSecondary}>
+          <Compass size={16} /> Opportunities
+        </Link>
+      </div>
+      <p className="mt-4 text-xs text-slate-500">
+        A PPMK student?{' '}
+        <Link to={session ? '/me?become=member' : '/login'} className="font-semibold text-primary">
+          {session ? 'Switch to a member profile' : 'Sign in'}
+        </Link>
+      </p>
+    </div>
+  )
 }
 
 export function RequireRole({
@@ -38,7 +81,7 @@ export function RequireRole({
 
   if (!allowed) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center">
+      <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface p-8 text-center">
         <p className="text-lg font-bold">Organizers only</p>
         <p className="mt-2 text-sm text-slate-500">
           This page is for {role === 'admin' ? 'admins' : 'event organizers'}.

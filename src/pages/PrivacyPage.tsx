@@ -1,32 +1,42 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ShieldCheck } from 'lucide-react'
+import { usePageMeta } from '../lib/usePageMeta'
 
-import { CONTACT_EMAIL } from '../config'
+import { CONTACT_EMAIL, isConfigured } from '../config'
 
 const visibilityRows = [
-  ['You', 'Your whole profile and your RSVPs'],
-  ['Other students', 'Nothing about you. They only see how many people are going'],
+  ['You', 'Your whole profile, your RSVPs, your posts and photos (including ones waiting for approval)'],
+  [
+    'Other members and visitors',
+    'Your @username, posts and comments you did not make anonymous, approved photos, and the clubs you are a member of (with your role). Never your name, phone, student ID or email',
+  ],
   [
     'Event organizers',
     'Your profile details (incl. phone) and RSVP, only for events you RSVP to, the same as filling in their Google Form',
   ],
-  ['EMSU admins', 'The member list, to manage roles and the hub'],
-  ['Anyone not signed in', 'Nothing'],
+  ['Club leaders', 'Your @username, batch and join message when you ask to join their club'],
+  [
+    'EMSU admins',
+    'The member list, club applications, and photos waiting for review. Admins can remove posts, but the app does not show them who wrote anonymous ones',
+  ],
+  [
+    'Anyone not signed in',
+    'The homepage, open events (title, date, place), club names, Opportunities, and Explore Korea posts with approved photos. No personal details',
+  ],
 ]
 
 const sections: [string, ReactNode][] = [
   [
     'What we collect',
-    'Your email (to sign in), student ID, name, batch, age, phone, course, where you live, and your answers to events (going / maybe / not going, an optional note, and whether you checked in). Nothing else: no location tracking, no social media, no photos.',
+    'Members: your email (to sign in), a username, student ID, name, batch, age, phone, course, where you live, your answers to events (going / maybe / not going, an optional note, whether you checked in) and the clubs you join. Visitors: only an email and a username. Everyone: the posts, comments, votes and photos you choose to share. Photos are shrunk in your browser before upload, which also removes hidden location (GPS) data. No location tracking and no social media.',
   ],
   [
     'Why',
-    'Only to run PPMK/EMSU community events, so you don\'t have to fill in the same details in a new form for every event.',
+    'To run PPMK/EMSU events and clubs without a new form every time, and to let the community share tips and find teammates.',
   ],
   [
     'Where it is stored',
-    'In a Supabase cloud database, served over encrypted connections (HTTPS). The website is hosted on Vercel. These services may store data on servers outside Korea. Access rules are enforced inside the database itself, not just hidden on screen.',
+    'In a Supabase cloud database and private file storage (photos), served over encrypted connections (HTTPS). The website is hosted on Vercel. These services may store data on servers outside Korea. Access rules are enforced inside the database itself, not just hidden on screen. Photos are only viewable through short-lived links, and only after an admin approves them.',
   ],
   [
     'Who is responsible',
@@ -41,7 +51,8 @@ const sections: [string, ReactNode][] = [
     <>
       You can see and correct your details on your{' '}
       <Link to="/me" className="font-semibold text-primary underline">profile page</Link>, and
-      delete your account and all your RSVPs there with one button. Your consent is required
+      delete your account there with one button: this removes your profile, RSVPs, club memberships,
+      posts, comments and photo records. You can also delete any single post or photo yourself. Your consent is required
       before your profile is saved, and you can withdraw it by deleting your account.
     </>,
   ],
@@ -60,26 +71,19 @@ const sections: [string, ReactNode][] = [
 ]
 
 export default function PrivacyPage() {
+  usePageMeta('Privacy', 'What the PPMK Community Hub stores, who can see it, and how to delete it.')
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <section>
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-red-50 p-3 text-primary">
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-primary">Privacy notice</p>
-            <h1 className="text-2xl font-bold sm:text-3xl">How we handle your data</h1>
-          </div>
-        </div>
-        <p className="mt-4 text-sm leading-7 text-slate-600">
-          PPMK Community Hub is a pilot for Malaysian students at Hanyang ERICA,
-          starting with EMSU members. Here is exactly what happens to your
-          information, in plain language.
+        <h1 className="font-display text-5xl sm:text-6xl">Your data</h1>
+        <p className="mt-4 text-[15px] leading-7 text-slate-600">
+          PPMK Community Hub is a pilot for Malaysian students in Korea, starting
+          with EMSU at Hanyang ERICA. Here is exactly what happens to your
+          information, in plain language. Last updated November 2026.
         </p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="rounded-xl border border-slate-200 bg-surface p-5">
         <h2 className="text-lg font-bold">Who can see what?</h2>
         <dl className="mt-3 divide-y divide-slate-100">
           {visibilityRows.map(([who, what]) => (
@@ -92,7 +96,7 @@ export default function PrivacyPage() {
       </section>
 
       {sections.map(([title, body], index) => (
-        <section key={title} className="rounded-2xl border border-slate-200 bg-white p-5">
+        <section key={title} className="rounded-xl border border-slate-200 bg-surface p-5">
           <h2 className="text-lg font-bold">
             {index + 1}. {title}
           </h2>
@@ -100,14 +104,20 @@ export default function PrivacyPage() {
         </section>
       ))}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="rounded-xl border border-slate-200 bg-surface p-5">
         <h2 className="text-lg font-bold">Questions or requests</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Contact the EMSU tech team at{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-primary underline">
-            {CONTACT_EMAIL}
-          </a>
-          .
+          {isConfigured(CONTACT_EMAIL) ? (
+            <>
+              Contact the EMSU tech team at{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-primary underline">
+                {CONTACT_EMAIL}
+              </a>
+              .
+            </>
+          ) : (
+            'Contact the EMSU committee through the EMSU group chat.'
+          )}
         </p>
       </section>
     </div>

@@ -1,18 +1,143 @@
 @import "tailwindcss";
 
+/* Dark mode follows a .dark class on <html> (set by the theme switch). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. One warm palette, two themes.
+ * Light: off-white paper with near-black ink. Dark: warm near-black.
+ * Accents: PPMK red for actions, Jalur Gemilang gold for highlights.
+ *
+ * Pages use Tailwind's slate scale for greys; here it is remapped to warm
+ * greys, and flipped in dark mode, so every page follows the theme
+ * without per-element dark: classes.
+ */
 @theme {
+  /* Archivo, bundled with the site (no Google Fonts request). It has a
+     width axis, so headlines use a condensed cut of the same family. */
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
   --color-primary: #ac0024;
-  --color-primary-container: #d12438;
+  --color-primary-container: #c81d3a;
+  --color-gold: #9a6700;
+  --color-background: #f6f4f1;
+  --color-surface: #ffffff;
+  --color-ink: #1c1613;
+  --color-on-ink: #ffffff;
   --color-secondary: #465f88;
-  --color-background: #f8f8f8;
+
+  --color-slate-50: #f4f1ee;
+  --color-slate-100: #ece8e3;
+  --color-slate-200: #e0d9d2;
+  --color-slate-300: #cbc1b8;
+  --color-slate-400: #9e9188;
+  --color-slate-500: #776a62;
+  --color-slate-600: #5c5049;
+  --color-slate-700: #433933;
+  --color-slate-800: #2c2420;
+  --color-slate-900: #1c1613;
+  --color-slate-950: #120e0c;
 }
 
-:root {
-  font-family: "Plus Jakarta Sans", sans-serif;
+.dark {
+  color-scheme: dark;
+
+  --color-primary: #f0596a;
+  --color-primary-container: #d63d50;
+  --color-gold: #f2b33d;
+  --color-background: #14100e;
+  --color-surface: #1d1714;
+  --color-ink: #f3ede6;
+  --color-on-ink: #14100e;
+
+  --color-slate-50: #241d19;
+  --color-slate-100: #2c241f;
+  --color-slate-200: #3a302a;
+  --color-slate-300: #54473f;
+  --color-slate-400: #8b7e74;
+  --color-slate-500: #a3968b;
+  --color-slate-600: #c2b6ac;
+  --color-slate-700: #d8cec5;
+  --color-slate-800: #e8e0d8;
+  --color-slate-900: #f3ede6;
+  --color-slate-950: #faf6f2;
+
+  /* Tinted backgrounds become low-opacity washes; their text gets lighter. */
+  --color-red-50: rgb(240 89 106 / 0.12);
+  --color-red-100: rgb(240 89 106 / 0.2);
+  --color-red-200: rgb(240 89 106 / 0.32);
+  --color-red-600: #f27a87;
+  --color-red-700: #f5909b;
+  --color-red-800: #f8aab2;
+  --color-green-50: rgb(76 195 138 / 0.12);
+  --color-green-100: rgb(76 195 138 / 0.2);
+  --color-green-200: rgb(76 195 138 / 0.32);
+  --color-green-600: #4cc38a;
+  --color-green-700: #6fd3a3;
+  --color-green-800: #8fdeb8;
+  --color-emerald-50: rgb(52 211 153 / 0.1);
+  --color-emerald-100: rgb(52 211 153 / 0.18);
+  --color-emerald-200: rgb(52 211 153 / 0.3);
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #34d399;
+  --color-emerald-700: #5fe0b0;
+  --color-emerald-800: #86e9c3;
+  --color-emerald-900: #a7f0d3;
+  --color-amber-50: rgb(242 179 61 / 0.12);
+  --color-amber-100: rgb(242 179 61 / 0.2);
+  --color-amber-200: rgb(242 179 61 / 0.32);
+  --color-amber-300: rgb(242 179 61 / 0.45);
+  --color-amber-600: #f2b33d;
+  --color-amber-700: #f5c466;
+  --color-amber-800: #f8d48f;
+  --color-amber-900: #fbe2b5;
+  --color-sky-50: rgb(91 168 217 / 0.12);
+  --color-sky-700: #8cc4e8;
+  --color-sky-900: #b6daf1;
+  --color-indigo-50: rgb(129 140 248 / 0.12);
+  --color-indigo-200: rgb(129 140 248 / 0.3);
+  --color-indigo-500: #8b95f7;
+  --color-indigo-800: #aab2fa;
+  --color-indigo-900: #c3c9fb;
+  --color-violet-50: rgb(167 139 250 / 0.12);
+  --color-violet-200: rgb(167 139 250 / 0.3);
+  --color-violet-700: #c4b2fb;
+}
+
+/* Big condensed uppercase headlines: the one loud thing on each page. */
+@utility font-display {
+  font-family: var(--font-display);
+  font-stretch: 72%;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+}
+
+html {
+  background: var(--color-background);
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  background: #f8f8f8;
+  background: var(--color-background);
+  color: var(--color-slate-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

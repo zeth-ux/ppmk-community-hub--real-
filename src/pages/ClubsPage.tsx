@@ -1,109 +1,141 @@
 import { useState } from 'react'
-import { ExternalLink, MessageCircle, UserRound, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { CalendarClock, ChevronRight, Plus, Search, Users } from 'lucide-react'
 
-import { listClubs, listEvents } from '../lib/api'
-import { isPast } from '../lib/format'
+import { useAuth } from '../context/AuthContext'
+import { listClubMemberCounts, listClubs, listMyClubMemberships } from '../lib/api'
+import { CLUB_ROLE_LABEL } from '../lib/types'
+import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
-import EventCard from '../components/EventCard'
-import { EmptyState, ErrorBox, PageHeader, Spinner, card } from '../components/ui'
+import ClubAvatar from '../components/ClubAvatar'
+import { EmptyState, ErrorBox, PageHeader, Spinner, buttonPrimary, card, inputClass } from '../components/ui'
 
 export default function ClubsPage() {
+  usePageMeta('Clubs', 'Clubs under PPMK: find one, ask to join, or start your own.')
+  const { session } = useAuth()
+  const userId = session!.user.id
+
   const { data, loading, error } = useLoader(async () => {
-    const [clubs, events] = await Promise.all([listClubs(), listEvents()])
-    return { clubs, events: events.filter((e) => !isPast(e)) }
-  }, [])
+    const [clubs, counts, mine] = await Promise.all([
+      listClubs(),
+      listClubMemberCounts().catch(() => ({}) as Awaited<ReturnType<typeof listClubMemberCounts>>),
+      listMyClubMemberships(userId).catch(() => []),
+    ])
+    return { clubs: clubs.filter((c) => c.status !== 'inactive'), counts, mine }
+  }, [userId])
 
   const [category, setCategory] = useState('All')
+  const [search, setSearch] = useState('')
 
   const clubs = data?.clubs ?? []
   const categories = ['All', ...new Set(clubs.map((club) => club.category))]
-  const filtered = category === 'All' ? clubs : clubs.filter((c) => c.category === category)
+  const q = search.trim().toLowerCase()
+  const filtered = clubs
+    .filter((c) => category === 'All' || c.category === category)
+    .filter((c) => !q || `${c.name} ${c.tagline} ${c.description}`.toLowerCase().includes(q))
+  const myIds = new Set(data?.mine.map((m) => m.club_id))
+  const mineFirst = [...filtered.filter((c) => myIds.has(c.id)), ...filtered.filter((c) => !myIds.has(c.id))]
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Community"
         title="Clubs"
-        description="PPMK-registered clubs, who runs them and what they're up to next."
+        description="Clubs registered under PPMK. Open a club to see what they're up to, or ask to join."
+        action={
+          <Link to="/clubs/apply" className={buttonPrimary}>
+            <Plus size={16} />
+            Start a club
+          </Link>
+        }
       />
 
-      <div className="flex flex-wrap gap-2">
-        {categories.map((item) => (
-          <button
-            key={item}
-            onClick={() => setCategory(item)}
-            className={`rounded-full px-4 py-2 text-xs font-semibold ${
-              category === item ? 'bg-primary text-white' : 'border border-slate-200 bg-white text-slate-600'
-            }`}
-          >
-            {item}
-          </button>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search clubs"
+            aria-label="Search clubs"
+            className={`${inputClass} mt-0 pl-9`}
+          />
+        </div>
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
+          {categories.map((item) => (
+            <button
+              key={item}
+              onClick={() => setCategory(item)}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
+                category === item ? 'bg-primary text-white' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
         <Spinner />
       ) : error ? (
         <ErrorBox>{error}</ErrorBox>
-      ) : filtered.length === 0 ? (
-        <EmptyState title="No clubs listed yet" />
+      ) : mineFirst.length === 0 ? (
+        <EmptyState title="No clubs found">
+          <Link to="/clubs/apply" className="font-semibold text-primary">Start one</Link>
+        </EmptyState>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((club) => {
-            const upcoming = (data?.events ?? []).filter((e) => e.club_id === club.id).slice(0, 2)
-
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mineFirst.map((club) => {
+            const mine = data?.mine.find((m) => m.club_id === club.id)
+            const count = data?.counts[club.id]
             return (
-              <article key={club.id} className={`${card} flex flex-col p-5`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-primary">{club.category}</p>
-                    <h2 className="mt-1 text-xl font-bold">{club.name}</h2>
+              <Link
+                key={club.id}
+                to={`/clubs/${club.id}`}
+                className={`${card} group flex min-w-0 flex-col p-5 transition hover:border-primary`}
+              >
+                <div className="flex items-start gap-3">
+                  <ClubAvatar club={club} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-primary">{club.category}</p>
+                    <h2 className="truncate text-lg font-bold group-hover:text-primary">{club.name}</h2>
                   </div>
-                  <div className="rounded-xl bg-red-50 p-2 text-primary">
-                    <Users size={20} />
-                  </div>
+                  <ChevronRight size={18} className="mt-1 shrink-0 text-slate-300 group-hover:text-primary" />
                 </div>
 
-                {club.description && (
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{club.description}</p>
-                )}
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{club.tagline || club.description}</p>
 
-                {(club.leader_name || club.leader_contact) && (
-                  <div className="mt-4 space-y-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-                    {club.leader_name && (
-                      <p className="flex items-center gap-2">
-                        <UserRound size={15} /> {club.leader_name}
-                      </p>
-                    )}
-                    {club.leader_contact && (
-                      <p className="flex items-center gap-2">
-                        <MessageCircle size={15} /> {club.leader_contact}
-                      </p>
+                <div className="mt-auto space-y-1.5 pt-4 text-xs text-slate-500">
+                  {club.meeting_info && (
+                    <p className="flex items-center gap-1.5">
+                      <CalendarClock size={14} className="shrink-0" />
+                      <span className="truncate">{club.meeting_info}</span>
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Users size={14} /> {count?.members ?? 0} members
+                    </span>
+                    {mine ? (
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 font-semibold ${
+                          mine.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
+                        }`}
+                      >
+                        {mine.status === 'pending' ? 'Requested' : CLUB_ROLE_LABEL[mine.role]}
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-primary">{club.join_policy === 'open' ? 'Join' : 'Ask to join'}</span>
                     )}
                   </div>
-                )}
-
-                {upcoming.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Coming up</p>
-                    {upcoming.map((event) => (
-                      <EventCard key={event.id} event={event} compact />
-                    ))}
-                  </div>
-                )}
-
-                {club.join_url && (
-                  <a
-                    href={club.join_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50"
-                  >
-                    Join this club
-                    <ExternalLink size={15} />
-                  </a>
-                )}
-              </article>
+                  {count && count.pending > 0 && (
+                    <p className="rounded-lg bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                      {count.pending} join {count.pending === 1 ? 'request' : 'requests'} waiting
+                    </p>
+                  )}
+                </div>
+              </Link>
             )
           })}
         </div>

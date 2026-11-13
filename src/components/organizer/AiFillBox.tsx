@@ -105,7 +105,7 @@ export default function AiFillBox({ onFill }: { onFill: (result: AiExtractResult
         <ErrorBox>{error}</ErrorBox>
 
         {result && (
-          <div className="space-y-2 rounded-xl bg-white p-3 text-sm">
+          <div className="space-y-2 rounded-xl bg-surface p-3 text-sm">
             <p className="flex items-center gap-2 font-semibold text-green-700">
               <CheckCircle2 size={16} />
               Filled in. Please check every field below before saving.
