@@ -1,6 +1,33 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from 'node:path'
+
+/**
+ * Design preview: `npm run demo` swaps the database, login and AI for fake
+ * data (files in src/demo/), so every screen can be viewed on localhost with
+ * no Supabase project or keys. Normal `npm run dev` / builds are unaffected.
+ */
+function demoMode(): Plugin {
+  const swaps: Record<string, string> = {
+    'src/lib/api.ts': 'src/demo/api.ts',
+    'src/lib/supabase.ts': 'src/demo/supabase.ts',
+    'src/context/AuthContext.tsx': 'src/demo/AuthContext.tsx',
+    'src/lib/ai.ts': 'src/demo/ai.ts',
+  }
+  const root = process.cwd()
+  return {
+    name: 'demo-mode',
+    enforce: 'pre',
+    async resolveId(source, importer, options) {
+      if (!importer || importer.includes('/src/demo/')) return null
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+      if (!resolved) return null
+      const rel = path.relative(root, resolved.id).split(path.sep).join('/')
+      return swaps[rel] ? path.join(root, swaps[rel]) : null
+    },
+  }
+}
 
 /**
  * In `npm run dev`, serve the Vercel function in /api/ai.ts locally, so the
@@ -53,6 +80,20 @@ function localApi(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), localApi()],
-})
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), tailwindcss(), mode === 'demo' ? demoMode() : localApi()],
+  build: {
+    // Libraries that rarely change get their own files, so browsers keep
+    // them cached between app updates. Pages are split in App.tsx.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/ },
+            { name: 'supabase', test: /node_modules[\\/](@supabase|iceberg-js|tslib)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
+}))

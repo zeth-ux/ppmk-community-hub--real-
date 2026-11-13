@@ -11,6 +11,18 @@ Everything here is on free plans. Nothing costs money.
    - `0002_explicit_grants.sql`: table access for the app (needed on Supabase projects
      created in 2026; safe to run again)
    - `0003_ai.sql`: AI daily limits + saved AI announcements
+   - `0004_clubs_discussions.sql`: usernames, club pages & roles, club applications,
+     discussion board (Explore Korea / Student life / Team up), visitor accounts,
+     Explore opportunities, and the public homepage data. **Run this only after the team agrees** (it changes the shared
+     database). It only adds things; existing data is untouched. After it runs, everyone
+     is asked to pick a username the next time they open the app.
+   - `0005_photos.sql`: photo uploads (discussion posts, club posts, club gallery).
+     Creates a private storage bucket called `photos`. Every photo waits for an admin
+     to approve it under **Admin → Photos to review**. Run it right after 0004.
+   - `0006_organization.sql`: the PPMK page (`/ppmk`): High Committee, PPMK calendar,
+     MARA/JPA officers, with a photo for each person (public storage space `org-photos`).
+     Admins fill it in from the page itself (**Edit page** button).
+     Names and roles are public; phone numbers and emails only show to signed-in members.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 
@@ -45,7 +57,8 @@ Then **Deployments → ⋯ → Redeploy** (env vars only apply to new deploys).
   - `http://localhost:5173/**`
   - `https://YOUR-APP.vercel.app/**`
 
-**Authentication → Sign In / Providers → Email**: make sure Email is enabled.
+**Authentication → Sign In / Providers → Email**: make sure Email is enabled, and set
+**Email OTP Length** to **6** (the sign-in screen has 6 boxes for the code).
 
 **Authentication → Emails (Templates) → Magic Link**: replace the body with this, so
 the email has *both* a link and a code (the code is what saves people who open the
@@ -80,6 +93,14 @@ npm run dev
 ```
 
 Open http://localhost:5173.
+
+**Design preview (no Supabase needed):** `npm run demo` opens the site with fake data
+and a "Preview" bar to switch between student / organizer / admin / signed out. Nothing
+is saved; reload to reset. Handy for showing the design to the team.
+
+**First club presidents:** for clubs that existed before 0004, an admin opens
+**Admin → Clubs → Edit** and picks a president. They become an organizer and can manage
+the club page from then on. New clubs come in through **Clubs → Start a club**.
 
 ## 6. Turn on the AI features
 
