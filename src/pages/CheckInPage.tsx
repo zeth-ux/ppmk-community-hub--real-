@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AlertTriangle, Camera, CheckCircle2, ListChecks, Undo2 } from 'lucide-react'
 
+import { useLanguage } from '../context/LanguageContext'
 import { checkInByCode, setCheckIn } from '../lib/api'
-import { STATUS_LABEL, formatDate, friendlyError, todayKst } from '../lib/format'
+import { formatDate, friendlyError, todayKst } from '../lib/format'
 import type { CheckInResult } from '../lib/types'
 import { useLoader } from '../lib/useLoader'
 import { usePageMeta } from '../lib/usePageMeta'
@@ -30,17 +31,18 @@ const timeKst = (iso: string) =>
  */
 export default function CheckInPage() {
   const { code = '' } = useParams()
-  usePageMeta('Check-in')
+  const { t } = useLanguage()
+  usePageMeta(t('checkin.pageTitle'))
   const { data, error, loading } = useLoader(() => scanOnce(code), [code])
   const [undone, setUndone] = useState(false)
   const [undoError, setUndoError] = useState('')
 
-  if (loading) return <Spinner label="Checking in…" />
+  if (loading) return <Spinner label={t('checkin.checking')} />
 
   if (error || !data) {
     return (
       <div className="mx-auto max-w-md space-y-4">
-        <ErrorBox>{error || 'Something went wrong.'}</ErrorBox>
+        <ErrorBox>{error || t('checkin.error')}</ErrorBox>
         <ScanHelp />
       </div>
     )
@@ -69,7 +71,7 @@ export default function CheckInPage() {
         aria-live="polite"
       >
         {undone ? (
-          <p className="text-lg font-bold">Check-in undone</p>
+          <p className="text-lg font-bold">{t('checkin.undone')}</p>
         ) : (
           <>
             {data.already_checked_in ? (
@@ -78,15 +80,19 @@ export default function CheckInPage() {
               <CheckCircle2 size={56} className="mx-auto text-green-600" />
             )}
             <p className={`mt-3 text-sm font-bold uppercase tracking-wide ${data.already_checked_in ? 'text-amber-700' : 'text-green-700'}`}>
-              {data.already_checked_in ? `Already checked in at ${timeKst(data.checked_in_at)}` : 'Checked in'}
+              {data.already_checked_in ? t('checkin.already').replace('{time}', timeKst(data.checked_in_at)) : t('checkin.done')}
             </p>
           </>
         )}
 
-        <p className="mt-2 text-2xl font-bold">{data.full_name ?? 'Unknown name'}</p>
+        <p className="mt-2 text-2xl font-bold">{data.full_name ?? t('checkin.unknownName')}</p>
         <p className="mt-1 text-sm text-slate-600">
-          {data.student_id && <>ID {data.student_id}</>}
-          {data.batch && <> · Batch {data.batch}</>}
+          {[
+            data.student_id && t('checkin.studentId').replace('{id}', data.student_id),
+            data.batch && t('checkin.batch').replace('{batch}', String(data.batch)),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
         <p className="mt-3 text-sm text-slate-500">
           {data.event_title} · {formatDate(data.event_date)}
@@ -97,14 +103,17 @@ export default function CheckInPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           {notToday && (
             <p>
-              <strong>Check the event:</strong> this QR is for <strong>{data.event_title}</strong> on{' '}
-              {formatDate(data.event_date)}, not today.
+              <strong>{t('checkin.checkEvent')}</strong>{' '}
+              {t('checkin.notToday').replace('{title}', data.event_title).replace('{date}', formatDate(data.event_date))}
             </p>
           )}
           {notGoing && (
             <p className={notToday ? 'mt-2' : ''}>
-              Their RSVP says <strong>{STATUS_LABEL[data.status]}</strong>, not Going.
-              {data.status === 'not_attending' ? ' They were checked in anyway.' : ''}
+              {t('checkin.rsvpSays').replace(
+                '{status}',
+                t(data.status === 'maybe' ? 'eventDetail.maybeOption' : 'eventDetail.cantGo'),
+              )}
+              {data.status === 'not_attending' ? ` ${t('checkin.checkedAnyway')}` : ''}
             </p>
           )}
         </div>
@@ -114,11 +123,11 @@ export default function CheckInPage() {
 
       <div className="grid grid-cols-2 gap-2">
         <Link to={`/organizer?event=${data.event_id}`} className={buttonSecondary}>
-          <ListChecks size={16} /> Attendee list
+          <ListChecks size={16} /> {t('checkin.attendeeList')}
         </Link>
         {!undone && !data.already_checked_in ? (
           <button onClick={() => void undo()} className={buttonSecondary}>
-            <Undo2 size={16} /> Undo
+            <Undo2 size={16} /> {t('checkin.undo')}
           </button>
         ) : (
           <span />
@@ -131,12 +140,12 @@ export default function CheckInPage() {
 }
 
 function ScanHelp() {
+  const { t } = useLanguage()
   return (
     <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
       <Camera size={20} className="mt-0.5 shrink-0 text-primary" />
       <p>
-        <strong>Next person:</strong> open your phone's camera, point it at their QR code and tap the link. Stay
-        signed in to the hub in this browser.
+        <strong>{t('checkin.nextTitle')}</strong> {t('checkin.nextBody')}
       </p>
     </div>
   )

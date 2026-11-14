@@ -264,19 +264,19 @@ export default function EventDetailPage() {
         <section className={`${card} p-5 sm:p-7`} aria-labelledby="qr-heading">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="rounded-xl border border-slate-200 bg-white p-2">
-              <QrCode value={appUrl(`/checkin/${mine!.checkin_code}`)} label={`Check-in QR code for ${event.title}`} />
+              <QrCode value={appUrl(`/checkin/${mine!.checkin_code}`)} label={t('qr.alt').replace('{title}', event.title)} />
             </div>
             <div className="text-center sm:text-left">
               <h2 id="qr-heading" className="flex items-center justify-center gap-2 text-lg font-bold sm:justify-start">
-                <QrIcon size={20} className="text-primary" /> Your check-in QR
+                <QrIcon size={20} className="text-primary" /> {t('qr.title')}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Show this at the door and the organizer scans it. No list, no queue.
+                {t('qr.body')}
               </p>
               <ul className="mt-3 space-y-1 text-xs text-slate-500">
-                <li>• Turn your screen brightness up.</li>
-                <li>• Take a screenshot in case the signal is bad.</li>
-                <li>• It's yours only: it shows the organizer your name.</li>
+                <li>• {t('qr.tipBright')}</li>
+                <li>• {t('qr.tipScreenshot')}</li>
+                <li>• {t('qr.tipPersonal')}</li>
               </ul>
             </div>
           </div>

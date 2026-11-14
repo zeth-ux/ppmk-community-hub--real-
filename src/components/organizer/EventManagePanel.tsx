@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { useLanguage } from '../../context/LanguageContext'
 import { deleteEvent, listAttendees, setCheckIn } from '../../lib/api'
 import {
   STATUS_LABEL,
@@ -74,6 +75,7 @@ export default function EventManagePanel({
   onDeleted: () => void
   onChanged: () => void
 }) {
+  const { t } = useLanguage()
   const { data: attendees, setData, loading, error } = useLoader(
     () => listAttendees(event.id),
     [event.id],
@@ -194,8 +196,7 @@ export default function EventManagePanel({
         <p className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
           <Camera size={16} className="mt-0.5 shrink-0 text-primary" />
           <span>
-            <strong>At the door:</strong> everyone going has a check-in QR on the event page. Scan it with your
-            phone's normal camera and tap the link: they're checked in. The button below still works too.
+            <strong>{t('checkin.doorTitle')}</strong> {t('checkin.doorBody')}
           </span>
         </p>
 
