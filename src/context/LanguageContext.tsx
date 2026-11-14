@@ -128,6 +128,8 @@ const translations = {
     'privacy.whyBody': 'To run PPMK/EMSU events and clubs without a new form every time, and to let the community share tips and find teammates.',
     'privacy.storageTitle': 'Where it is stored',
     'privacy.storageBody': 'In a Supabase cloud database and private file storage (photos), served over encrypted connections (HTTPS). The website is hosted on Vercel. These services may store data on servers outside Korea. Access rules are enforced inside the database itself, not just hidden on screen. Photos are only viewable through short-lived links, and only after an admin approves them.',
+    'privacy.emailsTitle': 'Emails we send',
+    'privacy.emailsBody': 'Sign-in codes, and (if you RSVP going or maybe) a reminder the day before the event, sent from the shared EMSU Gmail account. A reminder contains your first name and the event details, and goes only to you. You can turn reminders off on your Me page. We keep a note that a reminder was sent so you never get two.',
     'privacy.responsibleTitle': 'Who is responsible',
     'privacy.responsibleBody': 'EMSU (Hanyang ERICA) is responsible for this data, not any individual student. During the pilot, the hub is run by the EMSU tech team.',
     'privacy.retentionTitle': 'How long we keep it',
@@ -848,6 +850,8 @@ const translations = {
     'checkin.error': 'Something went wrong.',
     'checkin.doorTitle': 'At the door:',
     'checkin.doorBody': 'everyone going has a check-in QR on the event page. Scan it with your phone\'s normal camera and tap the link: they\'re checked in. The button below still works too.',
+    'reminders.title': 'Event reminders',
+    'reminders.body': 'An email the day before events you said Going or Maybe to, sent to {email}.',
   },
   ms: {
     'language.name': 'Bahasa Melayu',
@@ -972,6 +976,8 @@ const translations = {
     'privacy.whyBody': 'Untuk mengurus acara dan kelab PPMK/EMSU tanpa perlu mengisi borang baharu setiap kali, serta membolehkan komuniti berkongsi tip dan mencari rakan sepasukan.',
     'privacy.storageTitle': 'Tempat penyimpanan',
     'privacy.storageBody': 'Dalam pangkalan data awan Supabase dan storan fail peribadi (foto), melalui sambungan yang disulitkan (HTTPS). Laman web dihoskan di Vercel. Perkhidmatan ini mungkin menyimpan data pada pelayan di luar Korea. Peraturan akses dikuatkuasakan dalam pangkalan data, bukan sekadar disembunyikan pada skrin. Foto hanya boleh dilihat melalui pautan sementara dan selepas diluluskan oleh pentadbir.',
+    'privacy.emailsTitle': 'E-mel yang kami hantar',
+    'privacy.emailsBody': 'Kod log masuk, dan (jika anda RSVP hadir atau mungkin) peringatan sehari sebelum acara, dihantar daripada akaun Gmail EMSU yang dikongsi. Peringatan mengandungi nama pertama anda dan butiran acara, dan hanya dihantar kepada anda. Anda boleh mematikan peringatan di halaman Saya. Kami menyimpan catatan bahawa peringatan telah dihantar supaya anda tidak menerimanya dua kali.',
     'privacy.responsibleTitle': 'Pihak yang bertanggungjawab',
     'privacy.responsibleBody': 'EMSU (Hanyang ERICA), bukan mana-mana pelajar secara individu, bertanggungjawab terhadap data ini. Semasa projek rintis, Hub dikendalikan oleh pasukan teknologi EMSU.',
     'privacy.retentionTitle': 'Tempoh penyimpanan',
@@ -1692,6 +1698,8 @@ const translations = {
     'checkin.error': 'Sesuatu tidak kena.',
     'checkin.doorTitle': 'Di pintu masuk:',
     'checkin.doorBody': 'setiap orang yang hadir ada QR daftar masuk di halaman acara. Imbas dengan kamera biasa telefon anda dan tekan pautan: mereka terus didaftar masuk. Butang di bawah masih boleh digunakan.',
+    'reminders.title': 'Peringatan acara',
+    'reminders.body': 'E-mel sehari sebelum acara yang anda jawab Hadir atau Mungkin, dihantar ke {email}.',
   },
   ko: {
     'language.name': '한국어',
@@ -1816,6 +1824,8 @@ const translations = {
     'privacy.whyBody': '매번 새 양식을 만들지 않고 PPMK/EMSU 행사와 동아리를 운영하며, 커뮤니티에서 정보를 나누고 팀원을 찾을 수 있도록 합니다.',
     'privacy.storageTitle': '저장 위치',
     'privacy.storageBody': '암호화된 연결(HTTPS)을 통해 Supabase 클라우드 데이터베이스와 비공개 파일 저장소(사진)에 저장됩니다. 웹사이트는 Vercel에서 호스팅됩니다. 이 서비스들은 한국 외부의 서버에 데이터를 저장할 수 있습니다. 접근 권한은 화면에서 숨기는 데 그치지 않고 데이터베이스에서 직접 적용됩니다. 사진은 관리자가 승인한 뒤 짧은 시간 동안 유효한 링크로만 볼 수 있습니다.',
+    'privacy.emailsTitle': '보내는 이메일',
+    'privacy.emailsBody': '로그인 코드와, (참석 또는 미정으로 RSVP한 경우) 행사 전날 알림 이메일을 EMSU 공용 Gmail 계정에서 보냅니다. 알림에는 이름과 행사 정보만 포함되며 본인에게만 전송됩니다. 내 정보 페이지에서 알림을 끌 수 있습니다. 같은 알림을 두 번 받지 않도록 알림 발송 여부를 기록합니다.',
     'privacy.responsibleTitle': '관리 책임자',
     'privacy.responsibleBody': '개별 학생이 아닌 EMSU(Hanyang ERICA)가 이 데이터의 관리 책임자입니다. 시범 운영 기간에는 EMSU 기술팀이 허브를 운영합니다.',
     'privacy.retentionTitle': '보관 기간',
@@ -2536,6 +2546,8 @@ const translations = {
     'checkin.error': '문제가 발생했습니다.',
     'checkin.doorTitle': '입구에서:',
     'checkin.doorBody': '참석하는 사람은 모두 행사 페이지에 체크인 QR이 있습니다. 휴대폰 기본 카메라로 스캔하고 링크를 누르면 체크인됩니다. 아래 버튼도 그대로 사용할 수 있습니다.',
+    'reminders.title': '행사 알림',
+    'reminders.body': '참석 또는 미정으로 응답한 행사 전날, {email}(으)로 알림 이메일을 보냅니다.',
   },
 } as const
 

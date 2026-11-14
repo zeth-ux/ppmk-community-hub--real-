@@ -84,6 +84,11 @@ export async function updateMyProfile(_userId: string, input: ProfileInput): Pro
   return wait(demoProfile)
 }
 
+export async function setEmailReminders(_userId: string, on: boolean): Promise<Profile> {
+  Object.assign(demoProfile, { email_reminders: on, updated_at: stamp() })
+  return wait(demoProfile)
+}
+
 export async function deleteMyAccount(): Promise<void> {
   alertDemo('Account deletion is disabled in the design preview.')
 }

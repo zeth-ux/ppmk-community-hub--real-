@@ -17,6 +17,7 @@ const sections = [
   ['privacy.collectTitle', 'privacy.collectBody'],
   ['privacy.whyTitle', 'privacy.whyBody'],
   ['privacy.storageTitle', 'privacy.storageBody'],
+  ['privacy.emailsTitle', 'privacy.emailsBody'],
   ['privacy.responsibleTitle', 'privacy.responsibleBody'],
   ['privacy.retentionTitle', 'privacy.retentionBody'],
   ['privacy.rightsTitle', 'privacy.rightsBody'],

@@ -28,6 +28,8 @@ export type Profile = {
   username: string | null
   /** 'visitor' = not a PPMK member: only the public Explore Korea topics. */
   account_type: 'member' | 'visitor'
+  /** "Your event is tomorrow" emails (0009). Missing until 0009 is installed. */
+  email_reminders?: boolean
   consent_at: string | null
   created_at: string
   updated_at: string

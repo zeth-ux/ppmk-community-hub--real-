@@ -66,6 +66,7 @@ const now = new Date().toISOString()
 export const demoProfile: Profile = {
   id: DEMO_USER_ID,
   email: 'demo.student@hanyang.ac.kr',
+  email_reminders: true,
   student_id: '2023012345',
   full_name: 'Aisyah Rahman',
   batch: 2023,

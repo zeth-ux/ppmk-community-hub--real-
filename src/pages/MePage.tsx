@@ -37,6 +37,7 @@ import {
   inputClass,
 } from '../components/ui'
 import MyRsvpsList from '../components/MyRsvpsList'
+import EmailRemindersToggle from '../components/EmailRemindersToggle'
 
 const RESIDENCES = ['ERICA dormitory', 'Ansan', 'Suwon', 'Seoul', 'Other']
 const roleTranslation: Record<ClubRole, TranslationKey> = {
@@ -456,6 +457,8 @@ export default function MePage() {
       {!welcome && session && !isVisitorForm && <MyClubs userId={session.user.id} />}
 
       {!welcome && session && !isVisitorForm && <MyRsvpsList userId={session.user.id} />}
+
+      {!welcome && !isVisitorForm && <EmailRemindersToggle />}
 
       <section className={`${card} p-5 sm:p-6`}>
         <div className="flex items-start gap-3">
