@@ -47,7 +47,8 @@ export default function FeedbackPanel({ eventId, going }: { eventId: string; goi
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {data.responses} {data.responses === 1 ? 'response' : 'responses'}
-                {going > 0 && ` · ${Math.round((data.responses / going) * 100)}% of people going`}
+                {/* People who said "can't go" but were checked in can rate too, so cap at 100%. */}
+                {going > 0 && ` · ${Math.min(100, Math.round((data.responses / going) * 100))}% of people going`}
               </p>
             </div>
 
