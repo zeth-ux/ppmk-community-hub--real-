@@ -850,6 +850,8 @@ const translations = {
     'checkin.error': 'Something went wrong.',
     'checkin.doorTitle': 'At the door:',
     'checkin.doorBody': 'everyone going has a check-in QR on the event page. Scan it with your phone\'s normal camera and tap the link: they\'re checked in. The button below still works too.',
+    'reminders.title': 'Event reminders',
+    'reminders.body': 'An email the day before events you said Going or Maybe to, sent to {email}.',
   },
   ms: {
     'language.name': 'Bahasa Melayu',
@@ -1696,6 +1698,8 @@ const translations = {
     'checkin.error': 'Sesuatu tidak kena.',
     'checkin.doorTitle': 'Di pintu masuk:',
     'checkin.doorBody': 'setiap orang yang hadir ada QR daftar masuk di halaman acara. Imbas dengan kamera biasa telefon anda dan tekan pautan: mereka terus didaftar masuk. Butang di bawah masih boleh digunakan.',
+    'reminders.title': 'Peringatan acara',
+    'reminders.body': 'E-mel sehari sebelum acara yang anda jawab Hadir atau Mungkin, dihantar ke {email}.',
   },
   ko: {
     'language.name': '한국어',
@@ -2542,6 +2546,8 @@ const translations = {
     'checkin.error': '문제가 발생했습니다.',
     'checkin.doorTitle': '입구에서:',
     'checkin.doorBody': '참석하는 사람은 모두 행사 페이지에 체크인 QR이 있습니다. 휴대폰 기본 카메라로 스캔하고 링크를 누르면 체크인됩니다. 아래 버튼도 그대로 사용할 수 있습니다.',
+    'reminders.title': '행사 알림',
+    'reminders.body': '참석 또는 미정으로 응답한 행사 전날, {email}(으)로 알림 이메일을 보냅니다.',
   },
 } as const
 

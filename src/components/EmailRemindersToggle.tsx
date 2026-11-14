@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BellRing } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { setEmailReminders } from '../lib/api'
 import { friendlyError } from '../lib/format'
 import { ErrorBox, card } from './ui'
@@ -9,6 +10,7 @@ import { ErrorBox, card } from './ui'
 /** Me page: switch "your event is tomorrow" emails on or off. */
 export default function EmailRemindersToggle() {
   const { session, profile, setProfile } = useAuth()
+  const { t } = useLanguage()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -34,10 +36,9 @@ export default function EmailRemindersToggle() {
         <div className="flex items-start gap-3">
           <BellRing className="mt-0.5 shrink-0 text-primary" size={21} />
           <div>
-            <h2 id="reminders-label" className="font-bold">Event reminders</h2>
+            <h2 id="reminders-label" className="font-bold">{t('reminders.title')}</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              An email the day before events you said <strong>Going</strong> or <strong>Maybe</strong> to,
-              sent to {profile.email}.
+              {t('reminders.body').replace('{email}', profile.email)}
             </p>
           </div>
         </div>
