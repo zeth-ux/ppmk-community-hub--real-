@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import {
   deleteOrgCalendarItem,
   deleteOrgPerson,
@@ -76,6 +77,7 @@ const FAQ: [string, string][] = [
 
 export default function PpmkPage() {
   usePageMeta('PPMK', 'Persatuan Pelajar Malaysia Korea: the High Committee, the PPMK calendar, and MARA and JPA contacts.')
+  const { t } = useLanguage()
   const { session, isMember, isAdmin } = useAuth()
   const { data, loading, error, reload } = useLoader(async () => {
     const [people, calendar] = await Promise.all([listOrgPeople(), listOrgCalendar()])
@@ -100,17 +102,17 @@ export default function PpmkPage() {
           <p className="mt-2 text-xl font-semibold">{ppmk.fullName}</p>
           <p className="text-slate-500">{ppmk.englishName}</p>
           <p className="mt-5 max-w-2xl text-[17px] leading-7 text-slate-600">{ppmk.summary}</p>
-          <nav aria-label="On this page" className="mt-7 flex flex-wrap gap-2">
-            <Link to={{ hash: 'committee' }} className={buttonSecondary}>High Committee</Link>
-            <Link to={{ hash: 'calendar' }} className={buttonSecondary}>Calendar</Link>
-            <Link to={{ hash: 'sponsors' }} className={buttonSecondary}>MARA &amp; JPA</Link>
-            <Link to={{ hash: 'faq' }} className={buttonSecondary}>Questions</Link>
+          <nav aria-label={t('ppmk.onThisPage')} className="mt-7 flex flex-wrap gap-2">
+            <Link to={{ hash: 'committee' }} className={buttonSecondary}>{t('ppmk.highCommittee')}</Link>
+            <Link to={{ hash: 'calendar' }} className={buttonSecondary}>{t('ppmk.calendar')}</Link>
+            <Link to={{ hash: 'sponsors' }} className={buttonSecondary}>{t('ppmk.sponsors')}</Link>
+            <Link to={{ hash: 'faq' }} className={buttonSecondary}>{t('ppmk.questions')}</Link>
           </nav>
         </div>
       </section>
 
       <section aria-labelledby="focus" className="grid gap-8 lg:grid-cols-[1fr_1.3fr]">
-        <h2 id="focus" className="font-display text-4xl sm:text-5xl">What we do</h2>
+        <h2 id="focus" className="font-display text-4xl sm:text-5xl">{t('ppmk.whatWeDo')}</h2>
         <dl className="grid border-t border-slate-200 sm:grid-cols-2">
           {ppmk.focus.map((f, i) => (
             <div key={f.title} className={`border-b border-slate-200 py-5 ${i % 2 === 0 ? 'sm:border-r sm:pr-6' : 'sm:pl-6'}`}>
@@ -124,10 +126,10 @@ export default function PpmkPage() {
       {isAdmin && (
         <div className="sticky top-20 z-30 flex items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
           <p className="text-sm font-semibold">
-            {editing ? 'Editing this page. Changes save straight away.' : 'You can edit the committee, calendar and sponsor contacts.'}
+            {editing ? t('ppmk.editingPage') : t('ppmk.editPageHint')}
           </p>
           <button onClick={() => setEditing(!editing)} className={`${editing ? buttonPrimary : buttonSecondary} shrink-0 py-2`}>
-            {editing ? 'Done' : <><Pencil size={15} /> Edit page</>}
+            {editing ? t('ppmk.done') : <><Pencil size={15} /> {t('ppmk.editPage')}</>}
           </button>
         </div>
       )}
@@ -138,7 +140,7 @@ export default function PpmkPage() {
       <section id="committee" className="scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-4xl sm:text-5xl">High Committee</h2>
+            <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.highCommittee')}</h2>
             <p className="mt-2 text-slate-600">
               Majlis Tertinggi PPMK{session_ ? `, session ${session_}` : ''}.
             </p>
@@ -151,7 +153,7 @@ export default function PpmkPage() {
         ) : (
           <>
             {committee.length === 0 && !editing && (
-              <p className="mt-6 text-slate-500">The committee list will be added soon.</p>
+              <p className="mt-6 text-slate-500">{t('ppmk.committeeAddedSoon')}</p>
             )}
             <CommitteeChart people={committee} editing={editing} onChange={reload} />
             {editing && <PersonForm kind="committee" onDone={reload} />}
@@ -166,10 +168,9 @@ export default function PpmkPage() {
 
       {/* ---------- Scholarship sponsors ---------- */}
       <section id="sponsors" className="scroll-mt-24">
-        <h2 className="font-display text-4xl sm:text-5xl">MARA &amp; JPA</h2>
+        <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.sponsors')}</h2>
         <p className="mt-2 max-w-2xl text-slate-600">
-          For scholarship, allowance or study-progress questions, contact your sponsor’s officer directly. PPMK can
-          point you to the right person, but only your sponsor can decide on scholarship matters.
+          {t('ppmk.sponsorDescription')}
         </p>
         {contactsHidden && !isMember && <MembersOnlyNote signedIn={Boolean(session)} />}
         {loading ? (
@@ -185,7 +186,7 @@ export default function PpmkPage() {
                     <h3 className="font-display text-3xl">{name}</h3>
                     {SPONSOR_SITES[name] && (
                       <a href={SPONSOR_SITES[name]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                        Official site <ExternalLink size={13} />
+                        {t('ppmk.officialSite')} <ExternalLink size={13} />
                       </a>
                     )}
                   </div>
@@ -213,7 +214,7 @@ export default function PpmkPage() {
 
       {/* ---------- FAQ ---------- */}
       <section id="faq" className="scroll-mt-24 border-t border-slate-200 pt-10">
-        <h2 className="font-display text-4xl sm:text-5xl">Questions</h2>
+        <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.questions')}</h2>
         <div className="mt-6 max-w-3xl divide-y divide-slate-200 border-y border-slate-200">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group py-4">

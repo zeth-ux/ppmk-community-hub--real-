@@ -14,9 +14,11 @@ import {
   Sparkles,
   UserRound,
   Users,
+  type LucideIcon,
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { displayName } from '../lib/format'
 import ThemeToggle from './ThemeToggle'
 import { CONTACT_EMAIL, SURVEY_URL, isConfigured } from '../config'
@@ -30,6 +32,7 @@ import { Spinner } from './ui'
  */
 export default function AppLayout() {
   const { session, isMember, isOrganizer, isAdmin } = useAuth()
+  const { t } = useLanguage()
   const location = useLocation()
 
   // New page: start at the top. Link to a section (/about#faq): scroll to it.
@@ -44,46 +47,47 @@ export default function AppLayout() {
 
   // What each kind of user can open. Visitors and signed-out people get the
   // public parts only (the database enforces the same limits).
-  const navItems = [
-    { to: '/events', label: 'Events', icon: CalendarDays, show: isMember },
-    { to: '/clubs', label: 'Clubs', icon: Users, show: isMember },
-    { to: '/discuss', label: 'Discuss', icon: MessagesSquare, show: true },
-    { to: '/explore', label: 'Explore', icon: Compass, show: true },
-    { to: '/ppmk', label: 'PPMK', icon: Info, show: true },
-    { to: '/ask', label: 'Ask', icon: Sparkles, show: isMember },
-    { to: '/organizer', label: 'Organize', icon: ClipboardList, show: isOrganizer },
-    { to: '/admin', label: 'Admin', icon: ShieldCheck, show: isAdmin },
-  ].filter((item) => item.show)
+  const navItems = ([
+    { to: '/events', label: 'nav.events', icon: CalendarDays, show: isMember },
+    { to: '/clubs', label: 'nav.clubs', icon: Users, show: isMember },
+    { to: '/discuss', label: 'nav.discuss', icon: MessagesSquare, show: true },
+    { to: '/explore', label: 'nav.explore', icon: Compass, show: true },
+    { to: '/ppmk', label: 'nav.ppmk', icon: Info, show: true },
+    { to: '/ask', label: 'nav.ask', icon: Sparkles, show: isMember },
+    { to: '/organizer', label: 'nav.organize', icon: ClipboardList, show: isOrganizer },
+    { to: '/admin', label: 'nav.admin', icon: ShieldCheck, show: isAdmin },
+  ] satisfies { to: string; label: TranslationKey; icon: LucideIcon; show: boolean }[]).filter((item) => item.show)
 
   // Phones/iPads: at most 5 tabs. Ask, Organize and Admin are in the account
-  // menu (and Ask has a shortcut in the header).
-  const tabItems = !session
+  // menu.
+  const tabItems: { to: string; label: TranslationKey; icon: LucideIcon }[] = !session
     ? [
-        { to: '/', label: 'Home', icon: Home },
-        { to: '/discuss', label: 'Discuss', icon: MessagesSquare },
-        { to: '/explore', label: 'Explore', icon: Compass },
-        { to: '/ppmk', label: 'PPMK', icon: Info },
+        { to: '/', label: 'nav.home', icon: Home },
+        { to: '/discuss', label: 'nav.discuss', icon: MessagesSquare },
+        { to: '/explore', label: 'nav.explore', icon: Compass },
+        { to: '/ppmk', label: 'nav.ppmk', icon: Info },
       ]
     : [
         ...navItems.filter((item) => ['/events', '/clubs', '/discuss', '/explore'].includes(item.to)),
-        { to: '/me', label: 'Me', icon: UserRound },
+        { to: '/me', label: 'nav.me', icon: UserRound },
       ]
 
   return (
     <div className="min-h-screen bg-background text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-3 sm:px-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="PPMK Community Hub, home">
-            <LogoMark size={36} />
-            <div className="leading-none">
-              <p className="font-display text-[22px] leading-none">
-                PPMK<span className="text-gold">.</span>hub
-              </p>
-              <p className="mt-0.5 hidden text-[11px] text-slate-500 min-[360px]:block">Hanyang ERICA</p>
-            </div>
-          </Link>
+          <div className="flex min-w-0 items-center gap-3 lg:gap-5">
+            <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="PPMK Community Hub, home">
+              <LogoMark size={36} />
+              <div className="leading-none">
+                <p className="font-display text-[22px] leading-none">
+                  PPMK<span className="text-gold">.</span>hub
+                </p>
+                <p className="mt-0.5 hidden text-[11px] text-slate-500 min-[360px]:block">Hanyang ERICA</p>
+              </div>
+            </Link>
 
-          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Main">
+            <nav className="hidden items-center gap-0 lg:flex" aria-label={t('nav.main')}>
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
@@ -96,26 +100,15 @@ export default function AppLayout() {
                     }`
                   }
                 >
-                  {item.label}
+                  {t(item.label)}
                 </NavLink>
               ))}
-          </nav>
+            </nav>
+          </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <LanguageSwitcher />
             <ThemeToggle />
-            {session && isMember && (
-              <NavLink
-                to="/ask"
-                aria-label="Ask the Hub"
-                className={({ isActive }) =>
-                  `flex h-10 w-10 items-center justify-center rounded-full lg:hidden ${
-                    isActive ? 'bg-red-50 text-primary' : 'text-slate-600 hover:bg-slate-50'
-                  }`
-                }
-              >
-                <Sparkles size={20} />
-              </NavLink>
-            )}
             {session ? (
               <AccountMenu key={location.pathname} />
             ) : (
@@ -124,7 +117,7 @@ export default function AppLayout() {
                 className="inline-flex items-center gap-2 rounded-[10px] bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-container"
               >
                 <LogIn size={16} />
-                Sign in
+                {t('nav.signIn')}
               </Link>
             )}
           </div>
@@ -140,7 +133,7 @@ export default function AppLayout() {
       <SiteFooter />
 
       <nav
-          aria-label="Tabs"
+          aria-label={t('nav.tabs')}
           className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
         >
           <div className="mx-auto grid max-w-2xl" style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}>
@@ -158,7 +151,7 @@ export default function AppLayout() {
                   }
                 >
                   <Icon size={21} />
-                  {item.label}
+                  {t(item.label)}
                 </NavLink>
               )
             })}
@@ -170,6 +163,7 @@ export default function AppLayout() {
 
 function AccountMenu() {
   const { profile, isMember, isVisitor, isOrganizer, isAdmin, signOut } = useAuth()
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -215,33 +209,33 @@ function AccountMenu() {
           <div className="px-3 py-2">
             <p className="truncate text-sm font-bold">{displayName(profile)}</p>
             <p className="truncate text-xs text-slate-500">{profile?.email}</p>
-            {isVisitor && <p className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Visitor account</p>}
+            {isVisitor && <p className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{t('nav.visitorAccount')}</p>}
           </div>
           <div className="my-1 border-t border-slate-100" />
           <Link to="/me" className={item} role="menuitem">
-            <UserRound size={17} /> {isVisitor ? 'My profile' : 'My profile & clubs'}
+            <UserRound size={17} /> {isVisitor ? t('nav.myProfile') : t('nav.myProfileClubs')}
           </Link>
           {isMember && (
             <Link to="/ask" className={item} role="menuitem">
-              <Sparkles size={17} /> Ask the Hub
+              <Sparkles size={17} /> {t('nav.askHub')}
             </Link>
           )}
           {isOrganizer && (
             <Link to="/organizer" className={item} role="menuitem">
-              <ClipboardList size={17} /> Organizer tools
+              <ClipboardList size={17} /> {t('nav.organizerTools')}
             </Link>
           )}
           {isAdmin && (
             <Link to="/admin" className={item} role="menuitem">
-              <ShieldCheck size={17} /> Admin
+              <ShieldCheck size={17} /> {t('nav.admin')}
             </Link>
           )}
           <Link to="/ppmk" className={item} role="menuitem">
-            <Info size={17} /> PPMK
+            <Info size={17} /> {t('nav.ppmk')}
           </Link>
           <div className="my-1 border-t border-slate-100" />
           <button type="button" onClick={() => void logOut()} className={`${item} text-red-700 hover:bg-red-50`} role="menuitem">
-            <LogOut size={17} /> Log out
+            <LogOut size={17} /> {t('nav.signOut')}
           </button>
         </div>
       )}
@@ -251,33 +245,34 @@ function AccountMenu() {
 
 function SiteFooter() {
   const { isMember } = useAuth()
+  const { t } = useLanguage()
   const year = new Date().getFullYear()
   const link = 'text-slate-600 hover:text-primary'
 
   const columns: [string, [string, string][]][] = [
     [
-      'Community',
+      t('footer.community'),
       [
-        ['Discussions', '/discuss'],
-        ['Explore Korea', '/discuss?g=explore'],
-        ['Opportunities', '/explore'],
-        ...(isMember ? ([['Events', '/events'], ['Clubs', '/clubs']] as [string, string][]) : []),
+        [t('footer.discussions'), '/discuss'],
+        [t('footer.exploreKorea'), '/discuss?g=explore'],
+        [t('footer.opportunities'), '/explore'],
+        ...(isMember ? ([[t('footer.events'), '/events'], [t('footer.clubs'), '/clubs']] as [string, string][]) : []),
       ],
     ],
     [
-      'PPMK',
+      t('footer.ppmk'),
       [
-        ['PPMK', '/ppmk'],
-        ['Start a club', '/clubs/apply'],
-        ['Questions', '/ppmk#faq'],
+        [t('footer.ppmk'), '/ppmk'],
+        [t('footer.startClub'), '/clubs/apply'],
+        [t('footer.questions'), '/ppmk#faq'],
       ],
     ],
     [
-      'Help',
+      t('footer.help'),
       [
-        ['Privacy', '/privacy'],
-        ...(isConfigured(SURVEY_URL) ? ([['Give feedback', '/survey']] as [string, string][]) : []),
-        ...(isMember ? ([['Ask the Hub', '/ask']] as [string, string][]) : []),
+        [t('footer.privacy'), '/privacy'],
+        ...(isConfigured(SURVEY_URL) ? ([[t('footer.feedback'), '/survey']] as [string, string][]) : []),
+        ...(isMember ? ([[t('nav.askHub'), '/ask']] as [string, string][]) : []),
       ],
     ],
   ]
@@ -316,9 +311,74 @@ function SiteFooter() {
       </div>
       <div className="border-t border-slate-200">
         <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-slate-500 sm:px-6">
-          © {year} PPMK Community Hub. A student project, not an official Hanyang University service.
+          © {year} PPMK Community Hub. {t('footer.about')}
         </p>
       </div>
     </footer>
+  )
+}
+
+function LanguageSwitcher() {
+  const { language, setLanguage, t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const options = [
+    { code: 'ms', label: 'MS', name: 'Bahasa Melayu' },
+    { code: 'en', label: 'EN', name: 'English' },
+    { code: 'ko', label: 'KO', name: '한국어' },
+  ] as const
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', close)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', close)
+    }
+  }, [open])
+
+  const selected = options.find((option) => option.code === language)!
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={t('language.menu')}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={t('language.menu')}
+        className="inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-[10px] border border-slate-200 px-2 text-xs font-bold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+      >
+        {selected.label}
+        <ChevronDown size={13} className={`transition ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div role="menu" aria-label={t('language.menu')} className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-surface p-1.5 shadow-xl">
+          {options.map((option) => (
+            <button
+              key={option.code}
+              type="button"
+              role="menuitemradio"
+              aria-checked={language === option.code}
+              onClick={() => {
+                setLanguage(option.code)
+                setOpen(false)
+              }}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm ${
+                language === option.code ? 'bg-red-50 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span>{option.name}</span>
+              <span className="text-xs font-bold text-slate-400">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
