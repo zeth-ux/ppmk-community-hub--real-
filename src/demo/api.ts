@@ -5,6 +5,7 @@ import type {
   Announcements,
   AppRole,
   Attendee,
+  CheckInResult,
   Club,
   ClubApplication,
   ClubApplicationInput,
@@ -158,7 +159,7 @@ export async function setMyRsvp(eventId: string, status: RsvpStatus, comment = '
     counts[rsvp.status] = Math.max(0, counts[rsvp.status] - 1)
     Object.assign(rsvp, { status, comment, updated_at: stamp() })
   } else {
-    rsvp = { event_id: eventId, user_id: DEMO_USER_ID, status, comment, checked_in_at: null, created_at: stamp(), updated_at: stamp() }
+    rsvp = { event_id: eventId, user_id: DEMO_USER_ID, status, comment, checked_in_at: null, checkin_code: crypto.randomUUID(), created_at: stamp(), updated_at: stamp() }
     demoRsvps.push(rsvp)
   }
   counts[status] += 1
@@ -191,6 +192,26 @@ export async function listAttendees(eventId: string): Promise<Attendee[]> {
       checked_in_at: checkIns[`${eventId}:${m.id}`] ?? null,
     })),
   )
+}
+
+export async function checkInByCode(code: string): Promise<CheckInResult> {
+  const rsvp = demoRsvps.find((r) => r.checkin_code === code)
+  const event = demoEvents.find((e) => e.id === rsvp?.event_id)
+  if (!rsvp || !event) throw new Error('BAD_CHECKIN_CODE')
+  const already = rsvp.checked_in_at !== null
+  if (!already) rsvp.checked_in_at = stamp()
+  return wait({
+    event_id: event.id,
+    event_title: event.title,
+    event_date: event.event_date,
+    user_id: rsvp.user_id,
+    full_name: demoProfile.full_name,
+    student_id: demoProfile.student_id,
+    batch: demoProfile.batch,
+    status: rsvp.status,
+    checked_in_at: rsvp.checked_in_at!,
+    already_checked_in: already,
+  })
 }
 
 export async function setCheckIn(eventId: string, userId: string, checkedIn: boolean): Promise<string | null> {

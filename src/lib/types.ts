@@ -92,6 +92,8 @@ export type Rsvp = {
   status: RsvpStatus
   comment: string
   checked_in_at: string | null
+  /** Secret code behind the student's check-in QR (0008). */
+  checkin_code?: string
   created_at: string
   updated_at: string
 }
@@ -523,4 +525,20 @@ export type FeedbackOverview = {
   responses: number
   average: number | null
   events_rated: number
+}
+
+// ---------- QR check-in (0008) ----------
+
+export type CheckInResult = {
+  event_id: string
+  event_title: string
+  event_date: string
+  user_id: string
+  full_name: string | null
+  student_id: string | null
+  batch: number | null
+  status: RsvpStatus
+  checked_in_at: string
+  /** True if this QR was already scanned before (nothing changed). */
+  already_checked_in: boolean
 }

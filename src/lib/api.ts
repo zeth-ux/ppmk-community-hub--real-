@@ -8,6 +8,7 @@ import type {
   Announcements,
   AppRole,
   Attendee,
+  CheckInResult,
   Club,
   ClubApplication,
   ClubApplicationInput,
@@ -270,6 +271,12 @@ export async function getFeedbackOverview(): Promise<FeedbackOverview> {
     average: row?.average === null || row?.average === undefined ? null : Number(row.average),
     events_rated: Number(row?.events_rated ?? 0),
   }
+}
+
+/** Organizers: a scanned QR code → check that person in. */
+export async function checkInByCode(code: string): Promise<CheckInResult> {
+  const rows = must(await supabase.rpc('check_in_by_code', { p_code: code })) as CheckInResult[]
+  return rows[0]
 }
 
 // ---------- Members & admin ----------

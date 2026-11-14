@@ -540,5 +540,36 @@ check("admin sees the hub overview", r == [(2, 3.5, 1)], r)
 r = run("select can_give_feedback(%s), can_give_feedback(%s)", F1, args=(EF_TODAY, EF_FUTURE))
 check("app can ask 'may I rate this?'", r == [(True, False)], r)
 
+# ---------- 0008: QR check-in ----------
+Q1 = new_user("qr1@x.com"); Q2 = new_user("qr2@x.com")
+complete(Q1, "2024301", 2024); complete(Q2, "2024302", 2024)
+EQ = run(fb_ins, O, args=("QR night", 0))[0][0]
+run("select set_my_rsvp(%s, 'attending')", Q1, args=(EQ,))
+run("select set_my_rsvp(%s, 'maybe')", Q2, args=(EQ,))
+r = run("select checkin_code from rsvps where event_id=%s", Q1, args=(EQ,))
+check("student can read their own check-in code", len(r) == 1 and r[0][0] is not None, r)
+CODE1 = r[0][0]
+CODE2 = run("select checkin_code from rsvps where event_id=%s", Q2, args=(EQ,))[0][0]
+check("every RSVP gets a different code", CODE1 != CODE2)
+r = run("select checkin_code from rsvps where event_id=%s and user_id=%s", Q1, args=(EQ, Q2))
+check("student cannot read someone else's code", r == [], r)
+r = run("update rsvps set checkin_code=gen_random_uuid() where user_id=auth.uid()", Q1)
+check("student cannot change their code", is_err(r, "permission denied"), r)
+r = run("select * from check_in_by_code(%s)", Q1, args=(CODE1,))
+check("student cannot check themselves in by scanning", is_err(r, "NOT_ALLOWED"), r)
+r = run("select * from check_in_by_code(%s)", None, role="anon", args=(CODE1,))
+check("signed-out cannot use a code", is_err(r, "permission denied"), r)
+r = run("select full_name, student_id, status, already_checked_in, checked_in_at is not null from check_in_by_code(%s)", O, args=(CODE1,))
+check("organizer scans and checks the student in", r == [("Student 2024301", "2024301", "attending", False, True)], r)
+first = run("select checked_in_at from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ, Q1))[0][0]
+r = run("select already_checked_in, checked_in_at from check_in_by_code(%s)", O, args=(CODE1,))
+check("scanning twice says 'already checked in' and keeps the first time", r == [(True, first)], r)
+r = run("select status, already_checked_in from check_in_by_code(%s)", A, args=(CODE2,))
+check("admin can scan too; shows the person said maybe", r == [("maybe", False)], r)
+r = run("select * from check_in_by_code(gen_random_uuid())", O)
+check("unknown code is rejected", is_err(r, "BAD_CHECKIN_CODE"), r)
+r = run("select count(*) from rsvps where event_id=%s and checked_in_at is not null", role=None, args=(EQ,))
+check("both scans recorded", r == [(2,)], r)
+
 print(f"\n{fails} failing checks")
 sys.exit(1 if fails else 0)

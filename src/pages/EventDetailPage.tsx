@@ -7,6 +7,7 @@ import {
   Clock,
   MapPin,
   Pencil,
+  QrCode as QrIcon,
   Share2,
   StickyNote,
   Users,
@@ -22,6 +23,7 @@ import {
   eventTimeRange,
   formatDate,
   friendlyError,
+  isPast,
   isRsvpOpen,
   rsvpDeadline,
   todayKst,
@@ -30,6 +32,7 @@ import type { RsvpStatus } from '../lib/types'
 import { useLoader } from '../lib/useLoader'
 import Breadcrumbs from '../components/Breadcrumbs'
 import FeedbackCard from '../components/FeedbackCard'
+import QrCode from '../components/QrCode'
 import { usePageMeta } from '../lib/usePageMeta'
 import { ErrorBox, Spinner, buttonSecondary, card, inputClass } from '../components/ui'
 
@@ -98,6 +101,9 @@ export default function EventDetailPage() {
   const full = event.capacity !== null && counts.attending >= event.capacity
   const commentValue = comment ?? mine?.comment ?? ''
   // "How was it?" from the day of the event, for people who went.
+  // Check-in QR for people coming, until they've been checked in.
+  const showQr =
+    mine !== null && mine.status !== 'not_attending' && Boolean(mine.checkin_code) && !mine.checked_in_at && !isPast(event)
   const showFeedback =
     mine !== null && (mine.status === 'attending' || mine.checked_in_at !== null) && event.event_date <= todayKst()
 
@@ -253,6 +259,29 @@ export default function EventDetailPage() {
       </article>
 
       {showFeedback && <FeedbackCard eventId={event.id} />}
+
+      {showQr && (
+        <section className={`${card} p-5 sm:p-7`} aria-labelledby="qr-heading">
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+            <div className="rounded-xl border border-slate-200 bg-white p-2">
+              <QrCode value={appUrl(`/checkin/${mine!.checkin_code}`)} label={`Check-in QR code for ${event.title}`} />
+            </div>
+            <div className="text-center sm:text-left">
+              <h2 id="qr-heading" className="flex items-center justify-center gap-2 text-lg font-bold sm:justify-start">
+                <QrIcon size={20} className="text-primary" /> Your check-in QR
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Show this at the door and the organizer scans it. No list, no queue.
+              </p>
+              <ul className="mt-3 space-y-1 text-xs text-slate-500">
+                <li>• Turn your screen brightness up.</li>
+                <li>• Take a screenshot in case the signal is bad.</li>
+                <li>• It's yours only: it shows the organizer your name.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={`${card} p-5 sm:p-7`} aria-labelledby="rsvp-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">

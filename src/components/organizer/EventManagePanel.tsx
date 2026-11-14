@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  Camera,
   Download,
   ExternalLink,
   Pencil,
@@ -189,6 +190,14 @@ export default function EventManagePanel({
             Export CSV ({visible.length})
           </button>
         </div>
+
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+          <Camera size={16} className="mt-0.5 shrink-0 text-primary" />
+          <span>
+            <strong>At the door:</strong> everyone going has a check-in QR on the event page. Scan it with your
+            phone's normal camera and tap the link: they're checked in. The button below still works too.
+          </span>
+        </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
