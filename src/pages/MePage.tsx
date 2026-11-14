@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   deleteMyAccount,
   isUsernameAvailable,
@@ -25,7 +26,7 @@ import {
 import { USERNAME_PATTERN, friendlyError } from '../lib/format'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
-import { CLUB_ROLE_LABEL, type Profile } from '../lib/types'
+import type { ClubRole, Profile } from '../lib/types'
 import { safeNext } from '../components/guards'
 import {
   ErrorBox,
@@ -38,6 +39,12 @@ import {
 import MyRsvpsList from '../components/MyRsvpsList'
 
 const RESIDENCES = ['ERICA dormitory', 'Ansan', 'Suwon', 'Seoul', 'Other']
+const roleTranslation: Record<ClubRole, TranslationKey> = {
+  president: 'clubRole.president',
+  vice_president: 'clubRole.vicePresident',
+  committee: 'clubRole.committee',
+  member: 'clubRole.member',
+}
 
 const thisYear = new Date().getFullYear()
 const BATCHES = Array.from({ length: 8 }, (_, i) => thisYear + 1 - i)
@@ -69,7 +76,8 @@ function toForm(profile: Profile | null): FormState {
 }
 
 export default function MePage() {
-  usePageMeta('My profile')
+  const { t } = useLanguage()
+  usePageMeta(t('profile.meta'))
   const { session, profile, profileComplete, isAdmin, isOrganizer, setProfile, signOut } =
     useAuth()
   const navigate = useNavigate()
@@ -119,30 +127,30 @@ export default function MePage() {
     const f = form
 
     if (!USERNAME_PATTERN.test(f.username.trim().toLowerCase())) {
-      return 'Pick a username: 3–20 lowercase letters, numbers, _ or .'
+      return t('profile.invalidUsername')
     }
     if (usernameState === 'taken') {
-      return 'That username is taken. Try another one.'
+      return t('profile.usernameTaken')
     }
     if (isVisitorForm) {
-      return f.consent ? '' : 'Please tick the consent box.'
+      return f.consent ? '' : t('profile.consentRequired')
     }
     if (!f.student_id.trim() || !f.full_name.trim() || !f.batch || !f.age ||
         !f.phone.trim() || !f.course.trim() || !f.residence) {
-      return 'Please fill in every field.'
+      return t('profile.allFieldsRequired')
     }
     if (!/^[A-Za-z0-9-]{3,30}$/.test(f.student_id.trim())) {
-      return 'Student ID should be 3–30 letters or numbers.'
+      return t('profile.invalidStudentId')
     }
     const age = Number(f.age)
     if (!Number.isInteger(age) || age < 15 || age > 99) {
-      return 'Please enter a valid age.'
+      return t('profile.invalidAge')
     }
     if (!/^[0-9+\-\s()]{8,20}$/.test(f.phone.trim())) {
-      return 'Please enter a valid phone number, e.g. 010-1234-5678.'
+      return t('profile.invalidPhone')
     }
     if (!f.consent) {
-      return 'Please tick the consent box so we can store your details.'
+      return t('profile.consentStoreDetails')
     }
     return ''
   }
@@ -206,7 +214,7 @@ export default function MePage() {
 
   async function handleDelete() {
     const confirmed = window.confirm(
-      'Delete your account, profile and all your RSVPs? This cannot be undone.',
+      t('profile.deleteConfirm'),
     )
     if (!confirmed) return
 
@@ -224,30 +232,30 @@ export default function MePage() {
       {welcome ? (
         <div className="border-b border-slate-200 pb-6">
           <h1 className="font-display text-5xl sm:text-6xl">
-            Selamat datang<span className="text-gold">.</span>
+            {t('profile.welcomeTitle')}<span className="text-gold">.</span>
           </h1>
           <p className="mt-3 text-[15px] leading-6 text-slate-600">
             {profile?.full_name
-              ? 'We added usernames! Pick one so you can join discussions and clubs. Your other details are already saved.'
+              ? t('profile.welcomeSaved')
               : isVisitorForm
-                ? 'Just pick a username and you can share and find food spots, hidden gems and trip ideas.'
-                : 'Fill this in once (about 2 minutes). After that you can join any PPMK/EMSU event with one tap, with no more Google Forms.'}
+                ? t('profile.visitorWelcome')
+                : t('profile.memberWelcome')}
           </p>
         </div>
       ) : (
         <PageHeader
-          eyebrow="Account"
-          title="My profile"
-          description="These details are reused for every event you join."
+          eyebrow={t('profile.account')}
+          title={t('profile.title')}
+          description={t('profile.detailsReused')}
         />
       )}
 
       {(welcome || isVisitorForm || params.get('become') === 'member') && (
         <fieldset className="grid gap-3 sm:grid-cols-2">
-          <legend className="mb-2 text-sm font-bold">Who are you?</legend>
+          <legend className="mb-2 text-sm font-bold">{t('profile.whoAreYou')}</legend>
           {([
-            ['member', GraduationCap, 'I’m a PPMK student', 'Malaysian student in Korea. Events, clubs, discussions and everything else.'],
-            ['visitor', Plane, 'I’m a visitor', 'Tourist, friend or non-PPMK student. Share and find food, places and trip ideas.'],
+            ['member', GraduationCap, t('profile.memberChoice'), t('profile.memberDescription')],
+            ['visitor', Plane, t('profile.visitorChoice'), t('profile.visitorDescription')],
           ] as const).map(([value, Icon, title, text]) => (
             <button
               key={value}
@@ -278,16 +286,16 @@ export default function MePage() {
             <UserRound size={20} />
           </div>
           <div>
-            <h2 className="font-bold">{isVisitorForm ? 'Your account' : 'Student information'}</h2>
+            <h2 className="font-bold">{isVisitorForm ? t('profile.yourAccount') : t('profile.studentInformation')}</h2>
             <p className="text-xs text-slate-500">
-              Signed in as {session?.user.email}
+              {t('profile.signedInAs')} {session?.user.email}
             </p>
           </div>
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <label className="block text-sm font-medium" htmlFor="username">
-            Username <span className="font-normal text-slate-500">(what other students see)</span>
+            {t('profile.username')} <span className="font-normal text-slate-500">{t('profile.usernameHint')}</span>
           </label>
           <div className="relative mt-1.5">
             <AtSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -298,50 +306,50 @@ export default function MePage() {
               autoComplete="username"
               autoCapitalize="none"
               maxLength={20}
-              placeholder="e.g. aisyah.r"
+              placeholder={t('profile.usernamePlaceholder')}
               className={`${inputClass} mt-0 pl-9`}
             />
           </div>
           <p className="mt-1.5 text-xs text-slate-500">
-            {usernameState === 'checking' && 'Checking…'}
-            {usernameState === 'free' && <span className="font-semibold text-green-700">✓ @{form.username} is available</span>}
-            {usernameState === 'taken' && <span className="font-semibold text-red-700">@{form.username} is taken</span>}
+            {usernameState === 'checking' && t('profile.checking')}
+            {usernameState === 'free' && <span className="font-semibold text-green-700">{t('profile.available').replace('{name}', form.username)}</span>}
+            {usernameState === 'taken' && <span className="font-semibold text-red-700">{t('profile.taken').replace('{name}', form.username)}</span>}
             {usernameState === 'idle' &&
-              '3–20 characters: lowercase letters, numbers, _ and . Your full name stays private; only organizers of events you join see it.'}
+              t('profile.usernameHelp')}
           </p>
         </div>
 
         {!isVisitorForm && (
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium">
-            Full name
+            {t('profile.fullName')}
             <input
               value={form.full_name}
               onChange={(e) => update('full_name', e.target.value)}
               autoComplete="name"
-              placeholder="As on your student card"
+              placeholder={t('profile.fullNamePlaceholder')}
               className={inputClass}
             />
           </label>
 
           <label className="text-sm font-medium">
-            Student ID
+            {t('profile.studentId')}
             <input
               value={form.student_id}
               onChange={(e) => update('student_id', e.target.value)}
-              placeholder="e.g. 2024012345"
+              placeholder={t('profile.studentIdPlaceholder')}
               className={inputClass}
             />
           </label>
 
           <label className="text-sm font-medium">
-            Batch (year you entered)
+            {t('profile.batch')}
             <select
               value={form.batch}
               onChange={(e) => update('batch', e.target.value)}
               className={inputClass}
             >
-              <option value="">Select batch</option>
+              <option value="">{t('profile.selectBatch')}</option>
               {BATCHES.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -351,19 +359,19 @@ export default function MePage() {
           </label>
 
           <label className="text-sm font-medium">
-            Age
+            {t('profile.age')}
             <input
               type="number"
               inputMode="numeric"
               value={form.age}
               onChange={(e) => update('age', e.target.value)}
-              placeholder="e.g. 21"
+              placeholder={t('profile.agePlaceholder')}
               className={inputClass}
             />
           </label>
 
           <label className="text-sm font-medium">
-            Phone
+            {t('profile.phone')}
             <input
               type="tel"
               autoComplete="tel"
@@ -375,28 +383,37 @@ export default function MePage() {
           </label>
 
           <label className="text-sm font-medium">
-            Course
+            {t('profile.course')}
             <input
               value={form.course}
               onChange={(e) => update('course', e.target.value)}
-              placeholder="e.g. Computer Science"
+              placeholder={t('profile.coursePlaceholder')}
               className={inputClass}
             />
           </label>
 
           <label className="text-sm font-medium sm:col-span-2">
-            Where do you live?
+            {t('profile.residence')}
             <select
               value={form.residence}
               onChange={(e) => update('residence', e.target.value)}
               className={inputClass}
             >
-              <option value="">Select</option>
-              {RESIDENCES.map((place) => (
+              <option value="">{t('profile.select')}</option>
+              {RESIDENCES.map((place) => {
+                const residenceKeys: Record<string, TranslationKey> = {
+                  'ERICA dormitory': 'profile.residenceErica',
+                  Ansan: 'profile.residenceAnsan',
+                  Suwon: 'profile.residenceSuwon',
+                  Seoul: 'profile.residenceSeoul',
+                  Other: 'profile.residenceOther',
+                }
+                return (
                 <option key={place} value={place}>
-                  {place}
+                  {t(residenceKeys[place])}
                 </option>
-              ))}
+                )
+              })}
             </select>
           </label>
         </div>
@@ -411,12 +428,12 @@ export default function MePage() {
           />
           <span className="text-sm leading-6 text-slate-600">
             {isVisitorForm
-              ? 'I agree that the PPMK Community Hub may store my email and username to run my account, as described in the '
-              : 'I agree that EMSU/PPMK may store these details to run events, as described in the '}
+              ? t('profile.visitorConsent')
+              : t('profile.memberConsent')}
             <Link to="/privacy" className="font-semibold text-primary underline">
-              privacy notice
+              {t('profile.privacyNotice')}
             </Link>
-            . I can edit or delete them at any time.
+            {t('profile.editDeleteAnytime')}
           </span>
         </label>
 
@@ -426,13 +443,13 @@ export default function MePage() {
           {saved && (
             <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700">
               <CheckCircle2 size={18} />
-              Profile saved.
+              {t('profile.saved')}
             </div>
           )}
         </div>
 
         <button type="submit" disabled={saving} className={`${buttonPrimary} mt-5 w-full`}>
-          {saving ? 'Saving…' : welcome ? 'Save and continue' : 'Save changes'}
+          {saving ? t('profile.saving') : welcome ? t('profile.saveContinue') : t('profile.saveChanges')}
         </button>
       </form>
 
@@ -444,15 +461,14 @@ export default function MePage() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 shrink-0 text-primary" size={21} />
           <div>
-            <h2 className="font-bold">Who can see this?</h2>
+            <h2 className="font-bold">{t('profile.whoCanSee')}</h2>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
-              <li>Other people only see your <strong>@username</strong>, never your name, phone or student ID.</li>
-              <li>On the discussion board you can also post anonymously.</li>
+              <li>{t('profile.visibilityUsername')}</li>
+              <li>{t('profile.visibilityAnonymous')}</li>
               <li>
-                When you RSVP to an event, its organizers can see your details
-                for that event, the same as filling in their Google Form.
+                {t('profile.visibilityEvent')}
               </li>
-              <li>EMSU admins can see the member list to manage the hub.</li>
+              <li>{t('profile.visibilityAdmins')}</li>
             </ul>
           </div>
         </div>
@@ -462,12 +478,12 @@ export default function MePage() {
         <div className="flex flex-wrap gap-3">
           {isOrganizer && (
             <Link to="/organizer" className={buttonSecondary}>
-              Organizer tools
+              {t('profile.organizerTools')}
             </Link>
           )}
           {isAdmin && (
             <Link to="/admin" className={buttonSecondary}>
-              Admin
+              {t('profile.admin')}
             </Link>
           )}
           <button
@@ -478,23 +494,23 @@ export default function MePage() {
             className={`${buttonSecondary} text-red-700`}
           >
             <LogOut size={16} />
-            Log out
+            {t('profile.logOut')}
           </button>
         </div>
       )}
 
       {!welcome && (
       <section className="rounded-2xl border border-red-100 bg-red-50 p-5 sm:p-6">
-        <h2 className="font-bold text-red-800">Delete my data</h2>
+        <h2 className="font-bold text-red-800">{t('profile.deleteData')}</h2>
         <p className="mt-2 text-sm leading-6 text-red-700">
-          Permanently deletes your account, profile and RSVPs from the hub.
+          {t('profile.deleteDataHint')}
         </p>
         <button
           onClick={handleDelete}
           className="mt-4 inline-flex items-center gap-2 rounded-xl border border-red-200 bg-surface px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-100"
         >
           <Trash2 size={16} />
-          Delete my account
+          {t('profile.deleteAccount')}
         </button>
       </section>
       )}
@@ -503,6 +519,7 @@ export default function MePage() {
 }
 
 function MyClubs({ userId }: { userId: string }) {
+  const { t } = useLanguage()
   const { data } = useLoader(async () => {
     const [memberships, clubs, applications] = await Promise.all([
       listMyClubMemberships(userId).catch(() => []),
@@ -515,25 +532,25 @@ function MyClubs({ userId }: { userId: string }) {
     }
   }, [userId])
 
-  const appStatus = {
-    pending: ['Waiting for admin review', 'bg-amber-50 text-amber-700'],
-    needs_changes: ['Changes requested', 'bg-red-50 text-red-700'],
-    rejected: ['Not approved', 'bg-slate-100 text-slate-600'],
-    approved: ['Approved', 'bg-green-50 text-green-700'],
+  const appStatus: Record<string, [TranslationKey, string]> = {
+    pending: ['profile.waitingReview', 'bg-amber-50 text-amber-700'],
+    needs_changes: ['profile.changesRequested', 'bg-red-50 text-red-700'],
+    rejected: ['profile.notApproved', 'bg-slate-100 text-slate-600'],
+    approved: ['clubApply.approved', 'bg-green-50 text-green-700'],
   } as const
 
   return (
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">My clubs</h2>
+        <h2 className="text-lg font-bold">{t('profile.myClubs')}</h2>
         <div className="flex gap-2">
-          <Link to="/clubs" className={buttonSecondary}>Find clubs</Link>
-          <Link to="/clubs/apply" className={buttonSecondary}>Start a club</Link>
+          <Link to="/clubs" className={buttonSecondary}>{t('profile.findClubs')}</Link>
+          <Link to="/clubs/apply" className={buttonSecondary}>{t('profile.startClub')}</Link>
         </div>
       </div>
 
       {!data ? null : data.rows.length === 0 && data.applications.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">You haven't joined a club yet.</p>
+        <p className="mt-3 text-sm text-slate-500">{t('profile.noClubsJoined')}</p>
       ) : (
         <ul className="mt-3 divide-y divide-slate-100">
           {data.rows.map((m) => (
@@ -542,7 +559,7 @@ function MyClubs({ userId }: { userId: string }) {
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{m.club!.name}</p>
                   <p className="text-xs text-slate-500">
-                    {m.status === 'pending' ? 'Request sent, waiting for the club to accept' : CLUB_ROLE_LABEL[m.role]}
+                    {m.status === 'pending' ? t('profile.requestWaiting') : t(roleTranslation[m.role])}
                   </p>
                 </div>
                 <ChevronRight size={18} className="shrink-0 text-slate-400" />
@@ -555,9 +572,9 @@ function MyClubs({ userId }: { userId: string }) {
                 <div className="flex min-w-0 items-center gap-3">
                   <FileText size={18} className="shrink-0 text-slate-400" />
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{a.club_name} <span className="font-normal text-slate-500">(new club application)</span></p>
+                    <p className="truncate font-semibold">{a.club_name} <span className="font-normal text-slate-500">({t('profile.newClubApplication')})</span></p>
                     <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${appStatus[a.status][1]}`}>
-                      {appStatus[a.status][0]}
+                      {t(appStatus[a.status][0])}
                     </span>
                   </div>
                 </div>
