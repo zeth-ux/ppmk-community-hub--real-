@@ -23,6 +23,9 @@ Everything here is on free plans. Nothing costs money.
      MARA/JPA officers, with a photo for each person (public storage space `org-photos`).
      Admins fill it in from the page itself (**Edit page** button).
      Names and roles are public; phone numbers and emails only show to signed-in members.
+   - `0007_event_feedback.sql`: "How was it?" after an event (1–5 stars + comment) for
+     people who went, open for 14 days. Organizers see the average and comments on the
+     Organize page, **without names**; admins see the hub total on the Admin page.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 

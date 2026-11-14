@@ -16,10 +16,12 @@ import {
   formatDate,
   friendlyError,
   rsvpDeadline,
+  todayKst,
 } from '../../lib/format'
 import type { Attendee, HubEvent, RsvpStatus } from '../../lib/types'
 import { useLoader } from '../../lib/useLoader'
 import { ErrorBox, Spinner, buttonSecondary, card } from '../ui'
+import FeedbackPanel from './FeedbackPanel'
 import SharePanel from './SharePanel'
 
 type Filter = 'all' | RsvpStatus
@@ -172,6 +174,8 @@ export default function EventManagePanel({
       </section>
 
       <SharePanel event={event} onSaved={onChanged} />
+
+      {event.event_date <= todayKst() && <FeedbackPanel eventId={event.id} going={counts.attending} />}
 
       <section className={`${card} p-5 sm:p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-3">

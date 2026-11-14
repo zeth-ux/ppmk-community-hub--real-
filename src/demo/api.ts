@@ -31,7 +31,10 @@ import type {
   PublicClub,
   PublicEvent,
   PublicStats,
+  EventFeedback,
+  EventFeedbackReport,
   EventInput,
+  FeedbackOverview,
   HubEvent,
   HubStats,
   Member,
@@ -194,6 +197,49 @@ export async function setCheckIn(eventId: string, userId: string, checkedIn: boo
   const value = checkedIn ? stamp() : null
   checkIns[`${eventId}:${userId}`] = value
   return wait(value)
+}
+
+// ---------- Post-event feedback ----------
+
+const demoFeedback: EventFeedback[] = []
+
+export async function getMyFeedback(eventId: string): Promise<EventFeedback | null> {
+  return wait(demoFeedback.find((f) => f.event_id === eventId) ?? null)
+}
+
+export async function canGiveFeedback(eventId: string): Promise<boolean> {
+  const event = demoEvents.find((e) => e.id === eventId)
+  const rsvp = demoRsvps.find((r) => r.event_id === eventId)
+  const today = new Date().toISOString().slice(0, 10)
+  return wait(Boolean(event && rsvp && (rsvp.status === 'attending' || rsvp.checked_in_at) && event.event_date <= today))
+}
+
+export async function setMyFeedback(eventId: string, rating: number, comment = ''): Promise<EventFeedback> {
+  let row = demoFeedback.find((f) => f.event_id === eventId)
+  if (row) Object.assign(row, { rating, comment, updated_at: stamp() })
+  else {
+    row = { event_id: eventId, user_id: DEMO_USER_ID, rating, comment, created_at: stamp(), updated_at: stamp() }
+    demoFeedback.push(row)
+  }
+  return wait(row)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getEventFeedback(_eventId: string): Promise<EventFeedbackReport> {
+  return wait({
+    responses: 14,
+    average: 4.4,
+    stars: [0, 1, 1, 3, 9],
+    comments: [
+      { rating: 5, comment: 'Best futsal night so far, please do it every month!', given_on: '2026-11-08' },
+      { rating: 4, comment: 'Fun, but it started 20 minutes late.', given_on: '2026-11-08' },
+      { rating: 2, comment: 'Not enough water for everyone.', given_on: '2026-11-09' },
+    ],
+  })
+}
+
+export async function getFeedbackOverview(): Promise<FeedbackOverview> {
+  return wait({ responses: 38, average: 4.31, events_rated: 4 })
 }
 
 // ---------- Members & admin ----------

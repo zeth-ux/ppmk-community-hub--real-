@@ -12,6 +12,9 @@ import type {
   ClubApplication,
   ClubApplicationInput,
   ClubInput,
+  EventFeedback,
+  EventFeedbackReport,
+  FeedbackOverview,
   ClubMemberCount,
   ClubMemberRow,
   ClubMembership,
@@ -207,6 +210,66 @@ export async function setCheckIn(
       p_checked_in: checkedIn,
     }),
   ) as string | null
+}
+
+// ---------- Post-event feedback ----------
+
+export async function getMyFeedback(eventId: string): Promise<EventFeedback | null> {
+  const result = await supabase
+    .from('event_feedback')
+    .select('*')
+    .eq('event_id', eventId)
+    .maybeSingle()
+
+  return must(result) as EventFeedback | null
+}
+
+/** Did the signed-in person go to this event, and is feedback still open? */
+export async function canGiveFeedback(eventId: string): Promise<boolean> {
+  return Boolean(must(await supabase.rpc('can_give_feedback', { p_event_id: eventId })))
+}
+
+export async function setMyFeedback(
+  eventId: string,
+  rating: number,
+  comment = '',
+): Promise<EventFeedback> {
+  return must(
+    await supabase.rpc('set_my_feedback', {
+      p_event_id: eventId,
+      p_rating: rating,
+      p_comment: comment,
+    }),
+  ) as EventFeedback
+}
+
+/** Organizers: ratings and comments for one event, without names. */
+export async function getEventFeedback(eventId: string): Promise<EventFeedbackReport> {
+  const [summary, comments] = await Promise.all([
+    supabase.rpc('event_feedback_summary', { p_event_id: eventId }),
+    supabase.rpc('event_feedback_comments', { p_event_id: eventId }),
+  ])
+  const row = (must(summary) as {
+    responses: number; average: number | null
+    stars_1: number; stars_2: number; stars_3: number; stars_4: number; stars_5: number
+  }[])[0]
+
+  return {
+    responses: Number(row?.responses ?? 0),
+    average: row?.average === null || row?.average === undefined ? null : Number(row.average),
+    stars: [row?.stars_1, row?.stars_2, row?.stars_3, row?.stars_4, row?.stars_5].map((n) => Number(n ?? 0)) as EventFeedbackReport['stars'],
+    comments: must(comments) as EventFeedbackReport['comments'],
+  }
+}
+
+/** Admins: feedback totals across the hub (for the course report). */
+export async function getFeedbackOverview(): Promise<FeedbackOverview> {
+  const row = (must(await supabase.rpc('feedback_overview')) as FeedbackOverview[])[0]
+  return {
+    responses: Number(row?.responses ?? 0),
+    average: row?.average === null || row?.average === undefined ? null : Number(row.average),
+    events_rated: Number(row?.events_rated ?? 0),
+  }
 }
 
 // ---------- Members & admin ----------
