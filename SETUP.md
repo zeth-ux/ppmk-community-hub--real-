@@ -26,6 +26,9 @@ Everything here is on free plans. Nothing costs money.
    - `0007_event_feedback.sql`: "How was it?" after an event (1–5 stars + comment) for
      people who went, open for 14 days. Organizers see the average and comments on the
      Organize page, **without names**; admins see the hub total on the Admin page.
+   - `0008_qr_checkin.sql`: a check-in QR code for everyone going (on the event page).
+     Organizers scan it with their normal phone camera and tap the link; that checks the
+     student in. Only organizers/admins can use the codes.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 

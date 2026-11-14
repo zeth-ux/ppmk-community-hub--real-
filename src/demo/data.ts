@@ -256,9 +256,9 @@ export const demoEvents: HubEvent[] = [
 ]
 
 export const demoRsvps: Rsvp[] = [
-  { event_id: 'evt-badminton', user_id: DEMO_USER_ID, status: 'attending', comment: '', checked_in_at: null, created_at: now, updated_at: now },
-  { event_id: 'evt-makan', user_id: DEMO_USER_ID, status: 'maybe', comment: 'Might be late', checked_in_at: null, created_at: now, updated_at: now },
-  { event_id: 'evt-past', user_id: DEMO_USER_ID, status: 'attending', comment: '', checked_in_at: now, created_at: now, updated_at: now },
+  { event_id: 'evt-badminton', checkin_code: '3f1c2a9e-7b4d-4e21-9a0c-5d6e7f8a9b01', user_id: DEMO_USER_ID, status: 'attending', comment: '', checked_in_at: null, created_at: now, updated_at: now },
+  { event_id: 'evt-makan', checkin_code: '8a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c02', user_id: DEMO_USER_ID, status: 'maybe', comment: 'Might be late', checked_in_at: null, created_at: now, updated_at: now },
+  { event_id: 'evt-past', checkin_code: 'c0ffee00-1234-4abc-9def-0123456789ab', user_id: DEMO_USER_ID, status: 'attending', comment: '', checked_in_at: now, created_at: now, updated_at: now },
 ]
 
 export const demoCounts: Record<string, { attending: number; maybe: number; not_attending: number }> = {

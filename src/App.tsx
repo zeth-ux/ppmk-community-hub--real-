@@ -19,6 +19,7 @@ const EventsPage = lazy(() => import('./pages/EventsPage'))
 const EventDetailPage = lazy(() => import('./pages/EventDetailPage'))
 const MePage = lazy(() => import('./pages/MePage'))
 const OrganizerPage = lazy(() => import('./pages/OrganizerPage'))
+const CheckInPage = lazy(() => import('./pages/CheckInPage'))
 const ClubsPage = lazy(() => import('./pages/ClubsPage'))
 const ExplorePage = lazy(() => import('./pages/ExplorePage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
@@ -69,6 +70,11 @@ export default function App() {
               <Route
                 path="/organizer"
                 element={<RequireAuth><RequireRole role="organizer"><OrganizerPage /></RequireRole></RequireAuth>}
+              />
+              {/* Opened by scanning a student's QR with the phone camera */}
+              <Route
+                path="/checkin/:code"
+                element={<RequireAuth><RequireRole role="organizer"><CheckInPage /></RequireRole></RequireAuth>}
               />
               <Route
                 path="/admin"
