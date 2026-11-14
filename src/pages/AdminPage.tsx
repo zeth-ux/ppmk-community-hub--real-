@@ -92,13 +92,14 @@ function StatsSection() {
       </section>
       {feedback && feedback.responses > 0 && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
-          <p className="text-xs font-semibold text-amber-700">Event feedback</p>
+          <p className="text-xs font-semibold text-amber-700">{t('feedback.adminTitle')}</p>
           <p className="mt-1 text-2xl font-bold">
             {feedback.average?.toFixed(2)} <span className="text-sm font-medium text-slate-500">/ 5</span>
           </p>
           <p className="text-xs text-slate-500">
-            {feedback.responses} {feedback.responses === 1 ? 'response' : 'responses'} across{' '}
-            {feedback.events_rated} {feedback.events_rated === 1 ? 'event' : 'events'}
+            {t('feedback.adminSummary')
+              .replace('{responses}', String(feedback.responses))
+              .replace('{events}', String(feedback.events_rated))}
           </p>
         </section>
       )}

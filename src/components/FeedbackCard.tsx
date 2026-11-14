@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { CheckCircle2, Star } from 'lucide-react'
 
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { canGiveFeedback, getMyFeedback, setMyFeedback } from '../lib/api'
 import { friendlyError } from '../lib/format'
 import { useLoader } from '../lib/useLoader'
 import { ErrorBox, buttonPrimary, card, inputClass } from './ui'
 
-const LABELS = ['', 'Bad', 'Not great', 'Okay', 'Good', 'Great!']
+const LABELS: TranslationKey[] = ['feedback.star1', 'feedback.star2', 'feedback.star3', 'feedback.star4', 'feedback.star5']
 
 /**
  * "How was it?" after an event, for people who went. Organizers only ever
  * see the average and the comments, never who wrote them.
  */
 export default function FeedbackCard({ eventId }: { eventId: string }) {
+  const { t } = useLanguage()
   // If loading fails (e.g. the feedback database update isn't installed
   // yet), `data` stays empty and the card simply doesn't show.
   const { data, setData } = useLoader(async () => {
@@ -57,20 +59,20 @@ export default function FeedbackCard({ eventId }: { eventId: string }) {
   return (
     <section className={`${card} p-5 sm:p-7`} aria-labelledby="feedback-heading">
       <h2 id="feedback-heading" className="text-lg font-bold">
-        {mine ? 'Your feedback' : 'How was it?'}
+        {mine ? t('feedback.yours') : t('feedback.title')}
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Anonymous: the organizers see the ratings and comments, but not who wrote them.
+        {t('feedback.anonymous')}
       </p>
 
-      <div className="mt-4 flex items-center gap-1" role="radiogroup" aria-label="Rating out of 5">
+      <div className="mt-4 flex items-center gap-1" role="radiogroup" aria-label={t('feedback.ratingLabel')}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
             role="radio"
             aria-checked={currentRating === n}
-            aria-label={`${n} star${n > 1 ? 's' : ''}: ${LABELS[n]}`}
+            aria-label={t('feedback.starAria').replace('{n}', String(n)).replace('{label}', t(LABELS[n - 1]))}
             disabled={!open || saving}
             onClick={() => setRating(n)}
             className="rounded-lg p-1.5 transition hover:scale-110 disabled:cursor-default disabled:hover:scale-100"
@@ -82,7 +84,7 @@ export default function FeedbackCard({ eventId }: { eventId: string }) {
           </button>
         ))}
         {currentRating > 0 && (
-          <span className="ml-2 text-sm font-semibold text-slate-600">{LABELS[currentRating]}</span>
+          <span className="ml-2 text-sm font-semibold text-slate-600">{t(LABELS[currentRating - 1])}</span>
         )}
       </div>
 
@@ -93,8 +95,8 @@ export default function FeedbackCard({ eventId }: { eventId: string }) {
             onChange={(e) => setComment(e.target.value)}
             maxLength={1000}
             rows={3}
-            placeholder="What went well? What could be better? (optional)"
-            aria-label="Comment for the organizers"
+            placeholder={t('feedback.placeholder')}
+            aria-label={t('feedback.commentLabel')}
             className={inputClass}
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -103,11 +105,11 @@ export default function FeedbackCard({ eventId }: { eventId: string }) {
               disabled={!currentRating || saving || !changed}
               className={buttonPrimary}
             >
-              {saving ? 'Sending…' : mine ? 'Update feedback' : 'Send feedback'}
+              {saving ? t('feedback.sending') : mine ? t('feedback.update') : t('feedback.send')}
             </button>
             {saved && !changed && (
               <span className="flex items-center gap-1.5 text-sm font-semibold text-green-700">
-                <CheckCircle2 size={16} /> Thank you!
+                <CheckCircle2 size={16} /> {t('feedback.thanks')}
               </span>
             )}
           </div>

@@ -1,5 +1,6 @@
 import { MessageSquareQuote, Star } from 'lucide-react'
 
+import { useLanguage } from '../../context/LanguageContext'
 import { getEventFeedback } from '../../lib/api'
 import { formatDate } from '../../lib/format'
 import { useLoader } from '../../lib/useLoader'
@@ -10,9 +11,10 @@ import { Spinner, card } from '../ui'
  * Anonymous by design: the database never tells the organizer who wrote what.
  */
 export default function FeedbackPanel({ eventId, going }: { eventId: string; going: number }) {
+  const { t } = useLanguage()
   const { data, loading } = useLoader(() => getEventFeedback(eventId), [eventId])
 
-  if (loading) return <Spinner label="Loading feedback…" />
+  if (loading) return <Spinner label={t('feedback.loading')} />
   // Not installed yet (database update 0007) or no permission: hide quietly.
   if (!data) return null
 
@@ -21,15 +23,15 @@ export default function FeedbackPanel({ eventId, going }: { eventId: string; goi
   return (
     <section className={`${card} p-5 sm:p-6`} aria-labelledby="feedback-results">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="feedback-results" className="font-bold">Feedback</h3>
+        <h3 id="feedback-results" className="font-bold">{t('feedback.results')}</h3>
         <p className="text-xs text-slate-500">
-          Anonymous · open for 14 days after the event
+          {t('feedback.panelNote')}
         </p>
       </div>
 
       {data.responses === 0 ? (
         <p className="py-6 text-center text-sm text-slate-500">
-          No feedback yet. People who went see a “How was it?” card on the event page.
+          {t('feedback.none')}
         </p>
       ) : (
         <>
@@ -46,9 +48,9 @@ export default function FeedbackPanel({ eventId, going }: { eventId: string; goi
                 ))}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {data.responses} {data.responses === 1 ? 'response' : 'responses'}
+                {data.responses === 1 ? t('feedback.oneResponse') : t('feedback.responses').replace('{n}', String(data.responses))}
                 {/* People who said "can't go" but were checked in can rate too, so cap at 100%. */}
-                {going > 0 && ` · ${Math.min(100, Math.round((data.responses / going) * 100))}% of people going`}
+                {going > 0 && ` · ${t('feedback.ofGoing').replace('{p}', String(Math.min(100, Math.round((data.responses / going) * 100))))}`}
               </p>
             </div>
 
