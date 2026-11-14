@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Camera, CheckCircle2, CornerDownRight, ExternalLink, LogIn, MessageCircle, Share2, Trash2 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   addForumComment,
   deleteForumComment,
@@ -15,7 +16,7 @@ import {
   uploadPhotos,
 } from '../lib/api'
 import { categoryInfo, friendlyError, timeAgo } from '../lib/format'
-import { TEAMUP_CATEGORIES, type ForumComment } from '../lib/types'
+import { TEAMUP_CATEGORIES, type ForumCategory, type ForumComment } from '../lib/types'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { useLoader } from '../lib/useLoader'
 import { usePageMeta } from '../lib/usePageMeta'
@@ -25,7 +26,23 @@ import { EmptyState, ErrorBox, Spinner, buttonPrimary, card, inputClass } from '
 
 type Node = ForumComment & { children: Node[] }
 
+const CATEGORY_LABEL_KEYS: Record<ForumCategory, TranslationKey> = {
+  food: 'discuss.categoryFood',
+  hidden_gems: 'discuss.categoryHiddenGems',
+  hangout: 'discuss.categoryHangout',
+  trips: 'discuss.categoryTrips',
+  budget: 'discuss.categoryBudget',
+  study: 'discuss.categoryStudy',
+  serious: 'discuss.categorySerious',
+  career: 'discuss.categoryCareer',
+  general: 'discuss.categoryGeneral',
+  hackathon: 'discuss.categoryHackathon',
+  startup: 'discuss.categoryStartup',
+  activities: 'discuss.categoryActivities',
+}
+
 export default function DiscussPostPage() {
+  const { t } = useLanguage()
   const { id = '' } = useParams()
   const { isAdmin, session } = useAuth()
   const navigate = useNavigate()
@@ -41,7 +58,7 @@ export default function DiscussPostPage() {
   const location = useLocation()
   const [actionError, setActionError] = useState(
     (location.state as { photoProblem?: string } | null)?.photoProblem
-      ? `Your post is up, but the photos didn't upload: ${(location.state as { photoProblem: string }).photoProblem}`
+      ? `${t('post.photoProblem')}: ${(location.state as { photoProblem: string }).photoProblem}`
       : '',
   )
   const [adding, setAdding] = useState<File[] | null>(null)
@@ -65,9 +82,9 @@ export default function DiscussPostPage() {
   const post = data?.post
   if (!post) {
     return (
-      <EmptyState title="This post isn't available">
-        It was removed, or it's in a members-only section.{' '}
-        <Link to="/discuss" className="font-semibold text-primary">Back to discussions</Link>
+      <EmptyState title={t('post.unavailable')}>
+        {t('post.unavailableDetails')}{' '}
+        <Link to="/discuss" className="font-semibold text-primary">{t('post.backToDiscussions')}</Link>
       </EmptyState>
     )
   }
@@ -85,7 +102,7 @@ export default function DiscussPostPage() {
   }
 
   async function removePost() {
-    if (!window.confirm('Delete this post and all its comments?')) return
+    if (!window.confirm(t('post.deletePostConfirm'))) return
     try {
       await deleteForumPost(post!.id, !post!.is_mine && isAdmin)
       navigate('/discuss', { replace: true })
@@ -110,12 +127,12 @@ export default function DiscussPostPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Breadcrumbs items={[['Discussions', '/discuss'], [cat.label, `/discuss?c=${post.category}`], [post.title]]} />
+      <Breadcrumbs items={[[t('discuss.title'), '/discuss'], [t(CATEGORY_LABEL_KEYS[post.category]), `/discuss?c=${post.category}`], [post.title]]} />
 
       <article className={`${card} p-5 sm:p-7`}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
           <Link to={`/discuss?c=${post.category}`} className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700 hover:bg-slate-200">
-            {cat.emoji} {cat.label}
+            {cat.emoji} {t(CATEGORY_LABEL_KEYS[post.category])}
           </Link>
           <AuthorTag username={post.author_username} anonymous={post.is_anonymous} isMine={post.is_mine} />
           <span>· {timeAgo(post.created_at)}</span>
@@ -131,12 +148,12 @@ export default function DiscussPostPage() {
             <div className="flex flex-wrap gap-2">
               {post.link_url && (
                 <a href={post.link_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50">
-                  Event page <ExternalLink size={14} />
+                  {t('discuss.eventPage')} <ExternalLink size={14} />
                 </a>
               )}
               {post.is_mine && (
                 <button onClick={() => void toggleClosed()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50">
-                  <CheckCircle2 size={15} /> {post.is_closed ? 'Reopen team' : 'Mark team as full'}
+                  <CheckCircle2 size={15} /> {post.is_closed ? t('post.reopenTeam') : t('post.markTeamFull')}
                 </button>
               )}
             </div>
@@ -163,7 +180,7 @@ export default function DiscussPostPage() {
           <div className="mt-4">
             {adding === null ? (
               <button onClick={() => setAdding([])} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary">
-                <Camera size={15} /> Add photos
+                <Camera size={15} /> {t('post.addPhotos')}
               </button>
             ) : (
               <div className="space-y-3 rounded-xl border border-slate-200 p-3">
@@ -185,10 +202,10 @@ export default function DiscussPostPage() {
                     }}
                     className={`${buttonPrimary} px-4 py-2`}
                   >
-                    {uploading ? 'Uploading…' : 'Upload for review'}
+                    {uploading ? t('post.uploading') : t('post.uploadReview')}
                   </button>
                   <button onClick={() => setAdding(null)} className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
-                    Cancel
+                    {t('post.cancel')}
                   </button>
                 </div>
               </div>
@@ -202,11 +219,11 @@ export default function DiscussPostPage() {
             <MessageCircle size={15} /> {data!.comments.length}
           </span>
           <button onClick={() => void share()} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-200">
-            <Share2 size={15} /> {copied ? 'Link copied!' : 'Share'}
+            <Share2 size={15} /> {copied ? t('post.linkCopied') : t('post.share')}
           </button>
           {(post.is_mine || isAdmin) && (
             <button onClick={() => void removePost()} className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-slate-400 hover:bg-red-50 hover:text-red-600">
-              <Trash2 size={15} /> {post.is_mine ? 'Delete' : 'Remove (admin)'}
+              <Trash2 size={15} /> {post.is_mine ? t('post.delete') : t('post.removeAdmin')}
             </button>
           )}
         </div>
@@ -220,20 +237,20 @@ export default function DiscussPostPage() {
             postId={post.id}
             onPosted={reload}
             defaultAnonymous={post.is_anonymous && post.is_mine}
-            placeholder={teamUp && !post.is_mine ? 'Interested? Say what you can bring…' : undefined}
+            placeholder={teamUp && !post.is_mine ? t('post.teamupCommentPlaceholder') : undefined}
           />
         ) : (
           <Link
             to={`/login?next=${encodeURIComponent(`/discuss/${post.id}`)}`}
             className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-4 text-sm font-semibold text-slate-600 hover:border-primary hover:text-primary"
           >
-            <LogIn size={16} /> Sign in with your email to comment
+            <LogIn size={16} /> {t('post.signInToComment')}
           </Link>
         )}
 
         <div className="mt-6">
           {tree.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-500">No comments yet. Start the conversation!</p>
+            <p className="py-6 text-center text-sm text-slate-500">{t('post.noComments')}</p>
           ) : (
             <ul className="space-y-5">
               {tree.map((node) => (
@@ -264,6 +281,7 @@ function CommentForm({
   defaultAnonymous?: boolean
   autoFocus?: boolean
 }) {
+  const { t } = useLanguage()
   const { profile } = useAuth()
   const [body, setBody] = useState('')
   const [anonymous, setAnonymous] = useState(defaultAnonymous)
@@ -295,7 +313,7 @@ function CommentForm({
         onChange={(e) => setBody(e.target.value)}
         maxLength={4000}
         autoFocus={autoFocus}
-        placeholder={placeholder ?? (parentId ? 'Write a reply…' : 'Add a comment…')}
+        placeholder={placeholder ?? (parentId ? t('post.replyPlaceholder') : t('post.commentPlaceholder'))}
         className={`${inputClass} mt-0`}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -303,11 +321,11 @@ function CommentForm({
         <div className="flex gap-2">
           {onCancel && (
             <button type="button" onClick={onCancel} className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
-              Cancel
+              {t('post.cancel')}
             </button>
           )}
           <button type="submit" disabled={busy || !body.trim()} className={`${buttonPrimary} px-4 py-2`}>
-            {busy ? 'Posting…' : parentId ? 'Reply' : 'Comment'}
+            {busy ? t('post.posting') : parentId ? t('post.reply') : t('post.comment')}
           </button>
         </div>
       </div>
@@ -329,12 +347,13 @@ function CommentItem({
   onChange: () => Promise<void>
   depth: number
 }) {
+  const { t } = useLanguage()
   const { session } = useAuth()
   const [replying, setReplying] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
   async function remove() {
-    if (!window.confirm('Delete this comment and its replies?')) return
+    if (!window.confirm(t('post.deleteCommentConfirm'))) return
     await deleteForumComment(node.id, !node.is_mine && isAdmin)
     await onChange()
   }
@@ -344,7 +363,7 @@ function CommentItem({
       <div className="flex gap-3">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? 'Expand thread' : 'Collapse thread'}
+          aria-label={collapsed ? t('post.expandThread') : t('post.collapseThread')}
           className="flex w-7 shrink-0 flex-col items-center"
         >
           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${node.is_anonymous ? 'bg-ink text-on-ink' : 'bg-red-50 text-primary'}`}>
@@ -356,7 +375,7 @@ function CommentItem({
           <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
             <AuthorTag username={node.author_username} anonymous={node.is_anonymous} isOp={node.is_op} isMine={node.is_mine} />
             <span>· {timeAgo(node.created_at)}</span>
-            {collapsed && node.children.length > 0 && <span className="font-semibold text-primary">+{node.children.length} replies</span>}
+            {collapsed && node.children.length > 0 && <span className="font-semibold text-primary">+{node.children.length} {t('post.replies')}</span>}
           </div>
           {!collapsed && (
             <>
@@ -364,12 +383,12 @@ function CommentItem({
               <div className="mt-1 flex gap-3 text-xs font-semibold text-slate-500">
                 {depth < 4 && session && (
                   <button onClick={() => setReplying(!replying)} className="inline-flex items-center gap-1 hover:text-primary">
-                    <CornerDownRight size={13} /> Reply
+                    <CornerDownRight size={13} /> {t('post.reply')}
                   </button>
                 )}
                 {(node.is_mine || isAdmin) && (
                   <button onClick={() => void remove()} className="hover:text-red-600">
-                    {node.is_mine ? 'Delete' : 'Remove'}
+                    {node.is_mine ? t('post.delete') : t('post.remove')}
                   </button>
                 )}
               </div>

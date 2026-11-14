@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Clock, ExternalLink, Flame, Lock, MessageCircle, PenSquare, Search, TrendingUp } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { listForumPosts, listPhotos } from '../lib/api'
 import { categoryInfo, timeAgo } from '../lib/format'
 import {
@@ -19,11 +20,36 @@ import { AuthorTag, CostBadge, PlaceBadge, TeamUpInfo, VoteButtons } from '../co
 import { MembersOnly } from '../components/guards'
 import { EmptyState, ErrorBox, Spinner, buttonPrimary, card, inputClass } from '../components/ui'
 
-const SORTS: { id: ForumSort; label: string; icon: typeof Flame }[] = [
-  { id: 'hot', label: 'Hot', icon: Flame },
-  { id: 'new', label: 'New', icon: Clock },
-  { id: 'top', label: 'Top', icon: TrendingUp },
+const SORTS: { id: ForumSort; label: TranslationKey; icon: typeof Flame }[] = [
+  { id: 'hot', label: 'discuss.sortHot', icon: Flame },
+  { id: 'new', label: 'discuss.sortNew', icon: Clock },
+  { id: 'top', label: 'discuss.sortTop', icon: TrendingUp },
 ]
+
+const GROUP_LABEL_KEYS: Record<ForumGroupId, TranslationKey> = {
+  explore: 'discuss.groupExplore',
+  life: 'discuss.groupLife',
+  teamup: 'discuss.groupTeamup',
+}
+const GROUP_BLURB_KEYS: Record<ForumGroupId, TranslationKey> = {
+  explore: 'discuss.groupExploreBlurb',
+  life: 'discuss.groupLifeBlurb',
+  teamup: 'discuss.groupTeamupBlurb',
+}
+const CATEGORY_LABEL_KEYS: Record<ForumCategory, TranslationKey> = {
+  food: 'discuss.categoryFood',
+  hidden_gems: 'discuss.categoryHiddenGems',
+  hangout: 'discuss.categoryHangout',
+  trips: 'discuss.categoryTrips',
+  budget: 'discuss.categoryBudget',
+  study: 'discuss.categoryStudy',
+  serious: 'discuss.categorySerious',
+  career: 'discuss.categoryCareer',
+  general: 'discuss.categoryGeneral',
+  hackathon: 'discuss.categoryHackathon',
+  startup: 'discuss.categoryStartup',
+  activities: 'discuss.categoryActivities',
+}
 
 const GROUP_STYLE: Record<ForumGroupId, { active: string; soft: string }> = {
   explore: { active: 'border-emerald-500', soft: 'bg-emerald-50 text-emerald-800' },
@@ -32,7 +58,8 @@ const GROUP_STYLE: Record<ForumGroupId, { active: string; soft: string }> = {
 }
 
 export default function DiscussPage() {
-  usePageMeta('Discussions', 'Halal makan, hidden gems, trips, study help and teammates, shared by Malaysian students in Korea.')
+  const { t } = useLanguage()
+  usePageMeta(t('discuss.title'), t('discuss.meta'))
   const { session, isMember } = useAuth()
   const [params, setParams] = useSearchParams()
 
@@ -92,11 +119,11 @@ export default function DiscussPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-5xl sm:text-6xl">Discussions</h1>
+          <h1 className="font-display text-5xl sm:text-6xl">{t('discuss.title')}</h1>
         </div>
         {!locked && (
           <Link to={newPostHref} className={buttonPrimary}>
-            <PenSquare size={16} /> {isTeamUp ? 'Find teammates' : 'New post'}
+            <PenSquare size={16} /> {isTeamUp ? t('discuss.findTeammates') : t('discuss.newPost')}
           </Link>
         )}
       </div>
@@ -119,15 +146,15 @@ export default function DiscussPage() {
             >
               {isLocked && <Lock size={13} className="absolute right-2.5 top-2.5 text-slate-400" />}
               <span className="block text-2xl">{g.emoji}</span>
-              <span className="mt-1 block text-xs font-bold leading-tight sm:mt-2 sm:text-base">{g.label}</span>
+              <span className="mt-1 block text-xs font-bold leading-tight sm:mt-2 sm:text-base">{t(GROUP_LABEL_KEYS[g.id])}</span>
               <span className="mt-0.5 hidden text-xs leading-5 text-slate-500 sm:line-clamp-2 sm:block">
-                {g.blurb}
+                {t(GROUP_BLURB_KEYS[g.id])}
               </span>
             </button>
           )
         })}
       </div>
-      <p className="-mt-2 text-sm text-slate-500 sm:hidden">{groupInfo.blurb}</p>
+      <p className="-mt-2 text-sm text-slate-500 sm:hidden">{t(GROUP_BLURB_KEYS[groupInfo.id])}</p>
 
       {locked ? (
         <MembersOnly compact />
@@ -137,11 +164,11 @@ export default function DiscussPage() {
             {/* Topics inside the section */}
             <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
               <Chip active={!category} onClick={() => go({ c: null })}>
-                All {groupInfo.label}
+                {t('discuss.all')} {t(GROUP_LABEL_KEYS[groupInfo.id])}
               </Chip>
               {cats.map((c) => (
                 <Chip key={c.id} active={category === c.id} onClick={() => go({ c: c.id })}>
-                  {c.emoji} {c.label}
+                  {c.emoji} {t(CATEGORY_LABEL_KEYS[c.id])}
                 </Chip>
               ))}
             </div>
@@ -156,7 +183,7 @@ export default function DiscussPage() {
                       sort === id ? 'bg-red-50 text-primary' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <Icon size={15} /> {label}
+                    <Icon size={15} /> {t(label)}
                   </button>
                 ))}
               </div>
@@ -165,8 +192,8 @@ export default function DiscussPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={group === 'explore' ? 'Search food, places, areas' : 'Search posts'}
-                  aria-label="Search posts"
+                  placeholder={group === 'explore' ? t('discuss.searchExplore') : t('discuss.searchPosts')}
+                  aria-label={t('discuss.searchPosts')}
                   className={`${inputClass} mt-0 pl-9`}
                 />
               </div>
@@ -174,9 +201,9 @@ export default function DiscussPage() {
 
             {!session && group === 'explore' && (
               <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                👋 Visiting Korea? Read freely.{' '}
-                <Link to="/login?next=/discuss" className="font-bold underline">Sign in</Link> with just your email to
-                post, vote or comment.
+                👋 {t('discuss.visitorWelcome')}{' '}
+                <Link to="/login?next=/discuss" className="font-bold underline">{t('discuss.signIn')}</Link>{' '}
+                {t('discuss.visitorPrompt')}
               </p>
             )}
 
@@ -185,8 +212,8 @@ export default function DiscussPage() {
             ) : error ? (
               <ErrorBox>{error}</ErrorBox>
             ) : (data ?? []).length === 0 ? (
-              <EmptyState title={query ? 'No posts match your search' : 'No posts here yet'}>
-                <Link to={newPostHref} className="font-semibold text-primary">Be the first to post</Link>
+              <EmptyState title={query ? t('discuss.noSearchResults') : t('discuss.noPosts')}>
+                <Link to={newPostHref} className="font-semibold text-primary">{t('discuss.firstPost')}</Link>
               </EmptyState>
             ) : (
               <ul className="space-y-3">
@@ -202,7 +229,7 @@ export default function DiscussPage() {
                         <div className="min-w-0 flex-1 py-1">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                             <span className={`rounded-full px-2 py-0.5 font-semibold ${GROUP_STYLE[cat.group].soft}`}>
-                              {cat.emoji} {cat.label}
+                              {cat.emoji} {t(CATEGORY_LABEL_KEYS[post.category])}
                             </span>
                             <AuthorTag username={post.author_username} anonymous={post.is_anonymous} isMine={post.is_mine} />
                             <span>· {timeAgo(post.created_at)}</span>
@@ -222,7 +249,7 @@ export default function DiscussPage() {
                           {loaded?.thumbs[post.id] && (
                             <img
                               src={loaded.thumbs[post.id]}
-                              alt={`Photo from “${post.title}”`}
+                              alt={`${t('discuss.photoFrom')} “${post.title}”`}
                               loading="lazy"
                               className="mt-2 h-40 w-full rounded-xl object-cover sm:hidden"
                             />
@@ -241,7 +268,7 @@ export default function DiscussPage() {
                                 rel="noreferrer"
                                 className="relative z-10 inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                               >
-                                Event page <ExternalLink size={12} />
+                                {t('discuss.eventPage')} <ExternalLink size={12} />
                               </a>
                             )}
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
@@ -252,7 +279,7 @@ export default function DiscussPage() {
                         {loaded?.thumbs[post.id] && (
                           <img
                             src={loaded.thumbs[post.id]}
-                            alt={`Photo from “${post.title}”`}
+                            alt={`${t('discuss.photoFrom')} “${post.title}”`}
                             loading="lazy"
                             className="hidden h-24 w-32 shrink-0 self-center rounded-xl object-cover sm:block"
                           />
@@ -267,7 +294,7 @@ export default function DiscussPage() {
 
           {/* Laptop sidebar: every topic, divided by section */}
           <aside className="hidden space-y-4 lg:block">
-            <nav className={`${card} p-3`} aria-label="Topics">
+            <nav className={`${card} p-3`} aria-label={t('discuss.topics')}>
               {FORUM_GROUPS.map((g, i) => {
                 const isLocked = !g.public && !isMember
                 return (
@@ -276,7 +303,7 @@ export default function DiscussPage() {
                       onClick={() => go({ g: g.id })}
                       className="flex w-full items-center justify-between px-2 pb-1 text-xs font-bold text-slate-400 hover:text-slate-700"
                     >
-                      <span>{g.emoji} {g.label}</span>
+                      <span>{g.emoji} {t(GROUP_LABEL_KEYS[g.id])}</span>
                       {isLocked && <Lock size={12} />}
                     </button>
                     {!isLocked &&
@@ -288,7 +315,7 @@ export default function DiscussPage() {
                             category === c.id ? 'bg-red-50 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <span>{c.emoji}</span> {c.label}
+                          <span>{c.emoji}</span> {t(CATEGORY_LABEL_KEYS[c.id])}
                         </button>
                       ))}
                   </div>
@@ -297,23 +324,23 @@ export default function DiscussPage() {
             </nav>
             {isTeamUp ? (
               <div className={`${card} p-4 text-sm leading-6 text-slate-600`}>
-                <p className="font-bold text-slate-900">How Team up works</p>
+                <p className="font-bold text-slate-900">{t('discuss.howTeamup')}</p>
                 <ol className="mt-2 list-decimal space-y-1 pl-5">
-                  <li>Post what you're joining and who you need.</li>
-                  <li>Interested people comment or message you.</li>
-                  <li>Mark the team as full when you're done.</li>
+                  <li>{t('discuss.teamupStep1')}</li>
+                  <li>{t('discuss.teamupStep2')}</li>
+                  <li>{t('discuss.teamupStep3')}</li>
                 </ol>
                 <Link to="/explore" className="mt-3 inline-block font-semibold text-primary">
-                  Browse opportunities
+                  {t('discuss.browseOpportunities')}
                 </Link>
               </div>
             ) : (
               <div className={`${card} p-4 text-sm leading-6 text-slate-600`}>
-                <p className="font-bold text-slate-900">Board rules</p>
+                <p className="font-bold text-slate-900">{t('discuss.rulesTitle')}</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>Be kind. Anonymous doesn't mean anything goes.</li>
-                  <li>No personal info about others.</li>
-                  <li>Admins can remove posts that break the rules.</li>
+                  <li>{t('discuss.rule1')}</li>
+                  <li>{t('discuss.rule2')}</li>
+                  <li>{t('discuss.rule3')}</li>
                 </ul>
               </div>
             )}
