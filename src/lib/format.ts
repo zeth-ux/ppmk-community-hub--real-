@@ -130,6 +130,8 @@ export function friendlyError(error: unknown): string {
 
   if (message.includes('EVENT_FULL'))
     return 'Sorry, this event is full. You can still choose "Maybe".'
+  if (message.includes('FEEDBACK_CLOSED'))
+    return 'Feedback is open from the day of the event until 14 days after, for people who went.'
   if (message.includes('LAST_ADMIN'))
     return 'You are the only admin. Make someone else an admin first.'
   if (message.includes('NOT_ALLOWED'))

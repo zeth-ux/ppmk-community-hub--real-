@@ -498,3 +498,29 @@ export type OrgCalendarItem = {
 }
 
 export type OrgCalendarInput = Omit<OrgCalendarItem, 'id'>
+
+// ---------- Post-event feedback (0007) ----------
+
+export type EventFeedback = {
+  event_id: string
+  user_id: string
+  rating: number
+  comment: string
+  created_at: string
+  updated_at: string
+}
+
+/** What an organizer sees: numbers and comments, never who wrote them. */
+export type EventFeedbackReport = {
+  responses: number
+  average: number | null
+  /** How many people gave 1, 2, 3, 4 and 5 stars. */
+  stars: [number, number, number, number, number]
+  comments: { rating: number; comment: string; given_on: string }[]
+}
+
+export type FeedbackOverview = {
+  responses: number
+  average: number | null
+  events_rated: number
+}

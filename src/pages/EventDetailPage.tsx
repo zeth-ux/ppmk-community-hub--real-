@@ -24,10 +24,12 @@ import {
   friendlyError,
   isRsvpOpen,
   rsvpDeadline,
+  todayKst,
 } from '../lib/format'
 import type { RsvpStatus } from '../lib/types'
 import { useLoader } from '../lib/useLoader'
 import Breadcrumbs from '../components/Breadcrumbs'
+import FeedbackCard from '../components/FeedbackCard'
 import { usePageMeta } from '../lib/usePageMeta'
 import { ErrorBox, Spinner, buttonSecondary, card, inputClass } from '../components/ui'
 
@@ -95,6 +97,9 @@ export default function EventDetailPage() {
   const open = isRsvpOpen(event)
   const full = event.capacity !== null && counts.attending >= event.capacity
   const commentValue = comment ?? mine?.comment ?? ''
+  // "How was it?" from the day of the event, for people who went.
+  const showFeedback =
+    mine !== null && (mine.status === 'attending' || mine.checked_in_at !== null) && event.event_date <= todayKst()
 
   async function choose(status: RsvpStatus) {
     if (!data) return
@@ -246,6 +251,8 @@ export default function EventDetailPage() {
           )}
         </div>
       </article>
+
+      {showFeedback && <FeedbackCard eventId={event.id} />}
 
       <section className={`${card} p-5 sm:p-7`} aria-labelledby="rsvp-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">

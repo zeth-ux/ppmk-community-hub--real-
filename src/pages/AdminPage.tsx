@@ -12,6 +12,7 @@ import {
   listClubApplications,
   reviewClubApplication,
   getAiUsageStats,
+  getFeedbackOverview,
   getHubStats,
   listAllProfiles,
   listClubs,
@@ -57,6 +58,7 @@ function StatsSection() {
   const { t } = useLanguage()
   const { data, loading, error } = useLoader(getHubStats, [])
   const { data: ai } = useLoader(() => getAiUsageStats().catch(() => []), [])
+  const { data: feedback } = useLoader(() => getFeedbackOverview().catch(() => null), [])
 
   if (loading) return <Spinner />
   if (error) return <ErrorBox>{error}</ErrorBox>
@@ -88,6 +90,18 @@ function StatsSection() {
           </div>
         ))}
       </section>
+      {feedback && feedback.responses > 0 && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+          <p className="text-xs font-semibold text-amber-700">Event feedback</p>
+          <p className="mt-1 text-2xl font-bold">
+            {feedback.average?.toFixed(2)} <span className="text-sm font-medium text-slate-500">/ 5</span>
+          </p>
+          <p className="text-xs text-slate-500">
+            {feedback.responses} {feedback.responses === 1 ? 'response' : 'responses'} across{' '}
+            {feedback.events_rated} {feedback.events_rated === 1 ? 'event' : 'events'}
+          </p>
+        </section>
+      )}
       {ai && ai.length > 0 && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ai.map((row) => (
