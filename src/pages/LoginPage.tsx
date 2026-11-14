@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react'
 import { usePageMeta } from '../lib/usePageMeta'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/format'
 import { safeNext } from '../components/guards'
@@ -17,7 +18,8 @@ import {
 } from '../components/ui'
 
 export default function LoginPage() {
-  usePageMeta('Sign in', 'Sign in with your email and a 6-digit code. No password.')
+  const { t } = useLanguage()
+  usePageMeta(t('login.title'), t('login.meta'))
   const { loading, session } = useAuth()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
@@ -28,7 +30,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  if (loading) return <Spinner label="Signing you in…" />
+  if (loading) return <Spinner label={t('login.signingIn')} />
   if (session) return <Navigate to={next} replace />
 
   async function sendLink(event?: FormEvent) {
@@ -38,7 +40,7 @@ export default function LoginPage() {
     const cleaned = email.trim().toLowerCase()
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned)) {
-      setError('Please enter a valid email address.')
+      setError(t('login.invalidEmail'))
       return
     }
 
@@ -70,7 +72,7 @@ export default function LoginPage() {
     const token = typed.replace(/\s/g, '')
 
     if (!/^\d{6}$/.test(token)) {
-      setError('Enter the 6-digit code from the email.')
+      setError(t('login.invalidCode'))
       return
     }
 
@@ -101,15 +103,14 @@ export default function LoginPage() {
         {step === 'email' ? (
           <form onSubmit={sendLink} className="mt-5 space-y-5">
             <div>
-              <h1 className="text-2xl font-bold">Sign in</h1>
+              <h1 className="text-2xl font-bold">{t('login.title')}</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                No password needed. We'll email you a sign-in link and a code.
-                New here? The same step creates your account.
+                {t('login.intro')}
               </p>
             </div>
 
             <label className="block text-sm font-medium">
-              Email
+              {t('login.email')}
               <input
                 type="email"
                 inputMode="email"
@@ -125,22 +126,21 @@ export default function LoginPage() {
             <ErrorBox>{error}</ErrorBox>
 
             <button type="submit" disabled={busy} className={`${buttonPrimary} w-full`}>
-              {busy ? 'Sending…' : 'Email me a sign-in link'}
+              {busy ? t('login.sending') : t('login.sendLink')}
             </button>
           </form>
         ) : (
           <form onSubmit={verifyCode} className="mt-5 space-y-5">
             <div>
-              <h1 className="text-2xl font-bold">Check your email</h1>
+              <h1 className="text-2xl font-bold">{t('login.checkEmail')}</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                We sent a message to <strong className="text-slate-800">{email}</strong>.
-                Tap the link in it, <em>or</em> type the 6-digit code here. The
-                code is handy if you opened this page inside KakaoTalk or WhatsApp.
+                {t('login.sentTo')}{' '}<strong className="text-slate-800">{email}</strong>.{' '}
+                {t('login.codeInstructions')}
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">6-digit code from the email</p>
+              <p className="mb-2 text-sm font-medium">{t('login.codeLabel')}</p>
               <CodeInput
                 value={code}
                 onChange={(v) => {
@@ -155,7 +155,7 @@ export default function LoginPage() {
             <ErrorBox>{error}</ErrorBox>
 
             <button type="submit" disabled={busy || code.length !== 6} className={`${buttonPrimary} w-full`}>
-              {busy ? 'Checking…' : 'Sign in'}
+              {busy ? t('login.checking') : t('login.title')}
             </button>
 
             <div className="flex items-center justify-between text-sm">
@@ -169,7 +169,7 @@ export default function LoginPage() {
                 className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-primary"
               >
                 <ArrowLeft size={15} />
-                Change email
+                {t('login.changeEmail')}
               </button>
 
               <button
@@ -178,12 +178,12 @@ export default function LoginPage() {
                 onClick={() => void sendLink()}
                 className="font-semibold text-primary disabled:opacity-50"
               >
-                Resend email
+                {t('login.resend')}
               </button>
             </div>
 
             <p className="text-xs text-slate-400">
-              Can't find it? Check your spam folder. Codes expire after an hour.
+              {t('login.spamHint')}
             </p>
           </form>
         )}
@@ -191,7 +191,7 @@ export default function LoginPage() {
 
       <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500">
         <ShieldCheck size={14} />
-        Your details are only used to run PPMK/EMSU events.
+        {t('login.privacyNote')}
       </p>
     </div>
   )

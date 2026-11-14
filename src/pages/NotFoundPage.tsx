@@ -4,9 +4,11 @@ import { ArrowLeft, Compass, Home, MessagesSquare } from 'lucide-react'
 import { usePageMeta } from '../lib/usePageMeta'
 import { buttonPrimary, buttonSecondary } from '../components/ui'
 import Songket from '../components/Songket'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function NotFoundPage() {
-  usePageMeta('Page not found')
+  const { t } = useLanguage()
+  usePageMeta(t('notFound.title'))
   const location = useLocation()
 
   return (
@@ -14,23 +16,23 @@ export default function NotFoundPage() {
       <Songket className="absolute right-0 top-0 hidden h-full w-1/2 opacity-20 [mask-image:linear-gradient(to_left,black_20%,transparent)] md:block" />
       <div className="relative max-w-2xl">
         <p className="font-display text-[7rem] text-gold sm:text-[10rem]">404</p>
-        <h1 className="font-display text-5xl sm:text-6xl">Sesat jalan?</h1>
+        <h1 className="font-display text-5xl sm:text-6xl">{t('notFound.heading')}</h1>
         <p className="mt-4 text-[17px] leading-7 text-slate-600">
-          There's no page at <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[15px]">{location.pathname}</code>.
-          The link may be old, or the post or event was removed.
+          {t('notFound.beforePath')}{' '}<code className="rounded bg-slate-100 px-1.5 py-0.5 text-[15px]">{location.pathname}</code>.
+          {' '}{t('notFound.afterPath')}
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link to="/" className={buttonPrimary}>
-            <Home size={16} /> Go home
+            <Home size={16} /> {t('notFound.home')}
           </Link>
           <Link to="/discuss" className={buttonSecondary}>
-            <MessagesSquare size={16} /> Discussions
+            <MessagesSquare size={16} /> {t('notFound.discussions')}
           </Link>
           <Link to="/explore" className={buttonSecondary}>
-            <Compass size={16} /> Opportunities
+            <Compass size={16} /> {t('notFound.opportunities')}
           </Link>
           <button type="button" onClick={() => window.history.back()} className={buttonSecondary}>
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {t('notFound.back')}
           </button>
         </div>
       </div>

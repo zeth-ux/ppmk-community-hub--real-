@@ -15,8 +15,9 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { deleteOpportunity, listOpportunities, saveOpportunity } from '../lib/api'
-import { deadlineLabel, formatDate, friendlyError, todayKst } from '../lib/format'
+import { deadlineLabel, friendlyError, todayKst } from '../lib/format'
 import {
   OPPORTUNITY_KINDS,
   OPPORTUNITY_SCOPES,
@@ -30,6 +31,24 @@ import { useLoader } from '../lib/useLoader'
 import { EmptyState, ErrorBox, Spinner, buttonPrimary, buttonSecondary, card, inputClass } from '../components/ui'
 
 type When = 'upcoming' | 'closing' | 'past'
+
+const OPPORTUNITY_KIND_KEYS: Record<OpportunityKind, TranslationKey> = {
+  conference: 'explore.kindConference',
+  culture: 'explore.kindCulture',
+  competition: 'explore.kindCompetition',
+  scholarship: 'explore.kindScholarship',
+  volunteer: 'explore.kindVolunteer',
+  career: 'explore.kindCareer',
+  sports: 'explore.kindSports',
+  other: 'explore.kindOther',
+}
+
+const OPPORTUNITY_SCOPE_KEYS: Record<OpportunityScope, TranslationKey> = {
+  korea: 'explore.scopeKorea',
+  asia: 'explore.scopeAsia',
+  global: 'explore.scopeGlobal',
+  online: 'explore.scopeOnline',
+}
 
 const EMPTY: OpportunityInput = {
   title: '',
@@ -46,7 +65,8 @@ const EMPTY: OpportunityInput = {
 }
 
 export default function ExplorePage() {
-  usePageMeta('Opportunities', 'Youth forums, hackathons, scholarships and career talks in Korea, Asia, worldwide and online.')
+  const { language, t } = useLanguage()
+  usePageMeta(t('explore.title'), t('explore.meta'))
   const { session, isMember, isOrganizer } = useAuth()
   const { data, loading, error, reload } = useLoader(listOpportunities, [])
 
@@ -89,28 +109,31 @@ export default function ExplorePage() {
     <div className="space-y-6">
       <section className="border-b border-slate-200 pb-6">
         <h1 className="font-display text-5xl sm:text-7xl">
-          Beyond <span className="text-gold">PPMK</span>
+          {language === 'ko' ? (
+            <><span className="text-gold">PPMK</span>{' '}{t('explore.heading')}</>
+          ) : (
+            <>{t('explore.heading')} <span className="text-gold">PPMK</span></>
+          )}
         </h1>
         <p className="mt-4 max-w-2xl text-[17px] leading-7 text-slate-600">
-          Youth forums, cultural nights, hackathons, scholarships and career talks in Korea, across Asia, worldwide and
-          online. From groups like AYNK, embassies and universities.
+          {t('explore.intro')}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           {isMember ? (
             <button onClick={() => { setNotice(''); setEditing('new') }} className={buttonPrimary}>
               {isOrganizer ? <Plus size={16} /> : <Lightbulb size={16} />}
-              {isOrganizer ? 'Add a listing' : 'Suggest an opportunity'}
+              {isOrganizer ? t('explore.addListing') : t('explore.suggest')}
             </button>
           ) : (
             !session && (
               <Link to="/login?next=/explore" className={buttonPrimary}>
-                Sign in to suggest one
+                {t('explore.signInSuggest')}
               </Link>
             )
           )}
           {isMember && (
             <Link to="/discuss?g=teamup" className={buttonSecondary}>
-              <Users size={16} /> Find teammates
+              <Users size={16} /> {t('explore.findTeammates')}
             </Link>
           )}
         </div>
@@ -124,9 +147,9 @@ export default function ExplorePage() {
             setNotice(
               editing === 'new'
                 ? isOrganizer
-                  ? 'Listing published.'
-                  : 'Thanks! Your suggestion was sent. An organizer will check it before it appears for everyone.'
-                : 'Listing saved.',
+                  ? t('explore.listingPublished')
+                  : t('explore.suggestionSent')
+                : t('explore.listingSaved'),
             )
             setEditing(null)
             await reload()
@@ -144,7 +167,7 @@ export default function ExplorePage() {
       {isOrganizer && suggestions.length > 0 && !editing && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <p className="font-bold text-amber-900">
-            {suggestions.length} {suggestions.length === 1 ? 'suggestion' : 'suggestions'} from members
+            {suggestions.length} {t(suggestions.length === 1 ? 'explore.suggestionSingular' : 'explore.suggestionPlural')}
           </p>
           <ul className="mt-3 space-y-2">
             {suggestions.map((o) => (
@@ -165,19 +188,19 @@ export default function ExplorePage() {
                     }}
                     className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-bold text-white"
                   >
-                    <Check size={15} /> Publish
+                    <Check size={15} /> {t('explore.publish')}
                   </button>
-                  <button onClick={() => setEditing(o)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Edit">
+                  <button onClick={() => setEditing(o)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label={t('explore.edit')}>
                     <Pencil size={15} />
                   </button>
                   <button
                     onClick={async () => {
-                      if (!window.confirm('Delete this suggestion?')) return
+                      if (!window.confirm(t('explore.deleteSuggestionConfirm'))) return
                       await deleteOpportunity(o.id)
                       await reload()
                     }}
                     className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                    aria-label="Delete"
+                    aria-label={t('explore.delete')}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -190,36 +213,36 @@ export default function ExplorePage() {
 
       {!isOrganizer && suggestions.length > 0 && (
         <p className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
-          You suggested {suggestions.length === 1 ? `“${suggestions[0].title}”` : `${suggestions.length} listings`}. An organizer will check it soon.
+          {t('explore.youSuggested')} {suggestions.length === 1 ? `“${suggestions[0].title}”` : `${suggestions.length} ${t('explore.listings')}`}. {t('explore.organizerWillCheck')}
         </p>
       )}
 
       {/* Where */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
-        <ScopeTab active={scope === 'all'} onClick={() => setScope('all')} label="Everywhere" emoji="✨" count={published.length} />
+        <ScopeTab active={scope === 'all'} onClick={() => setScope('all')} label={t('explore.everywhere')} emoji="✨" count={published.length} />
         {(Object.keys(OPPORTUNITY_SCOPES) as OpportunityScope[]).map((s) => (
-          <ScopeTab key={s} active={scope === s} onClick={() => setScope(s)} label={OPPORTUNITY_SCOPES[s].label} emoji={OPPORTUNITY_SCOPES[s].emoji} count={counts[s]} />
+          <ScopeTab key={s} active={scope === s} onClick={() => setScope(s)} label={t(OPPORTUNITY_SCOPE_KEYS[s])} emoji={OPPORTUNITY_SCOPES[s].emoji} count={counts[s]} />
         ))}
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-          <Chip active={kind === 'all'} onClick={() => setKind('all')}>All types</Chip>
+          <Chip active={kind === 'all'} onClick={() => setKind('all')}>{t('explore.allTypes')}</Chip>
           {(Object.keys(OPPORTUNITY_KINDS) as OpportunityKind[]).map((k) => (
             <Chip key={k} active={kind === k} onClick={() => setKind(k)}>
-              {OPPORTUNITY_KINDS[k].emoji} {OPPORTUNITY_KINDS[k].label}
+              {OPPORTUNITY_KINDS[k].emoji} {t(OPPORTUNITY_KIND_KEYS[k])}
             </Chip>
           ))}
         </div>
         <div className="flex gap-2">
-          <select value={when} onChange={(e) => setWhen(e.target.value as When)} aria-label="When" className="rounded-xl border border-slate-200 bg-surface px-3 py-2.5 text-sm font-semibold">
-            <option value="upcoming">Upcoming</option>
-            <option value="closing">Applications closing soon</option>
-            <option value="past">Past</option>
+          <select value={when} onChange={(e) => setWhen(e.target.value as When)} aria-label={t('explore.when')} className="rounded-xl border border-slate-200 bg-surface px-3 py-2.5 text-sm font-semibold">
+            <option value="upcoming">{t('explore.upcoming')}</option>
+            <option value="closing">{t('explore.closingSoon')}</option>
+            <option value="past">{t('explore.past')}</option>
           </select>
           <div className="relative flex-1 lg:w-56">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" aria-label="Search opportunities" className={`${inputClass} mt-0 pl-9`} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('explore.search')} aria-label={t('explore.searchOpportunities')} className={`${inputClass} mt-0 pl-9`} />
           </div>
         </div>
       </div>
@@ -229,8 +252,8 @@ export default function ExplorePage() {
       ) : error ? (
         <ErrorBox>{error}</ErrorBox>
       ) : list.length === 0 ? (
-        <EmptyState title="Nothing here yet">
-          {isMember ? 'Know of something good? Suggest it above.' : 'Check back soon.'}
+        <EmptyState title={t('explore.nothingYet')}>
+          {isMember ? t('explore.suggestAbove') : t('explore.checkBack')}
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -238,6 +261,8 @@ export default function ExplorePage() {
             <OpportunityCard
               key={o.id}
               o={o}
+              t={t}
+              language={language}
               isMember={isMember}
               signedIn={Boolean(session)}
               canEdit={isOrganizer}
@@ -280,20 +305,49 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   )
 }
 
-function dateRange(o: Opportunity) {
-  if (!o.start_date) return 'Date to be announced'
-  if (!o.end_date || o.end_date === o.start_date) return formatDate(o.start_date, 'long')
-  return `${formatDate(o.start_date)} – ${formatDate(o.end_date)}`
+function formatOpportunityDate(date: string, language: string, style: 'short' | 'long' = 'short') {
+  const locale = language === 'ms' ? 'ms-MY' : language === 'ko' ? 'ko-KR' : 'en-GB'
+  return new Date(`${date}T00:00:00`).toLocaleDateString(
+    locale,
+    style === 'long'
+      ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+      : { weekday: 'short', day: 'numeric', month: 'short' },
+  )
+}
+
+function dateRange(o: Opportunity, language: string, t: (key: TranslationKey) => string) {
+  if (!o.start_date) return t('explore.dateTba')
+  if (!o.end_date || o.end_date === o.start_date) return formatOpportunityDate(o.start_date, language, 'long')
+  return `${formatOpportunityDate(o.start_date, language)} – ${formatOpportunityDate(o.end_date, language)}`
+}
+
+function deadlineText(
+  date: string | null,
+  due: ReturnType<typeof deadlineLabel>,
+  language: string,
+  t: (key: TranslationKey) => string,
+) {
+  if (!date || !due) return ''
+  if (due.past) return t('explore.deadlinePassed')
+  const days = Math.round((new Date(`${date}T00:00:00`).getTime() - new Date(`${todayKst()}T00:00:00`).getTime()) / 86400000)
+  if (days === 0) return t('explore.closesToday')
+  if (days === 1) return t('explore.closesTomorrow')
+  if (days <= 14) return `${t('explore.closesIn')} ${days} ${t('explore.days')}`
+  return `${t('explore.closes')} ${formatOpportunityDate(date, language)}`
 }
 
 function OpportunityCard({
   o,
+  t,
+  language,
   isMember,
   signedIn,
   canEdit,
   onEdit,
 }: {
   o: Opportunity
+  t: (key: TranslationKey) => string
+  language: string
   isMember: boolean
   signedIn: boolean
   canEdit: boolean
@@ -302,6 +356,7 @@ function OpportunityCard({
   const kind = OPPORTUNITY_KINDS[o.kind]
   const scope = OPPORTUNITY_SCOPES[o.scope]
   const due = deadlineLabel(o.apply_deadline)
+  const dueText = deadlineText(o.apply_deadline, due, language, t)
   const teamCategory = o.kind === 'competition' ? 'hackathon' : 'activities'
   const teamHref = `/discuss/new?c=${teamCategory}&title=${encodeURIComponent(`Looking for teammates: ${o.title}`)}${
     o.url ? `&link=${encodeURIComponent(o.url)}` : ''
@@ -310,10 +365,10 @@ function OpportunityCard({
   return (
     <article className={`${card} relative flex flex-col p-5 transition`}>
       <div className={`flex flex-wrap items-center gap-2 text-xs font-semibold ${canEdit ? 'pr-8' : ''}`}>
-        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-800">{kind.emoji} {kind.label}</span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{scope.emoji} {scope.label}</span>
+        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-800">{kind.emoji} {t(OPPORTUNITY_KIND_KEYS[o.kind])}</span>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{scope.emoji} {t(OPPORTUNITY_SCOPE_KEYS[o.scope])}</span>
         {canEdit && (
-          <button onClick={onEdit} aria-label={`Edit ${o.title}`} className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onEdit} aria-label={`${t('explore.edit')} ${o.title}`} className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <Pencil size={14} />
           </button>
         )}
@@ -329,11 +384,11 @@ function OpportunityCard({
       {o.organizer && <p className="mt-0.5 text-sm font-medium text-slate-500">{o.organizer}</p>}
 
       <div className="mt-3 space-y-1.5 text-sm text-slate-600">
-        <p className="flex items-center gap-2"><CalendarDays size={15} className="shrink-0 text-slate-400" /> {dateRange(o)}</p>
+        <p className="flex items-center gap-2"><CalendarDays size={15} className="shrink-0 text-slate-400" /> {dateRange(o, language, t)}</p>
         {o.location && <p className="flex items-center gap-2"><MapPin size={15} className="shrink-0 text-slate-400" /> {o.location}</p>}
         {due && (
           <p className={`flex items-center gap-2 font-semibold ${due.urgent ? 'text-red-600' : due.past ? 'text-slate-400' : 'text-amber-700'}`}>
-            <Clock size={15} className="shrink-0" /> Apply · {due.text}
+            <Clock size={15} className="shrink-0" /> {t('explore.apply')} · {dueText}
           </p>
         )}
       </div>
@@ -343,18 +398,18 @@ function OpportunityCard({
       <div className="mt-auto flex flex-wrap gap-2 pt-4">
         {o.url && (
           <a href={o.url} target="_blank" rel="noreferrer" className={`${buttonPrimary} px-4 py-2.5`}>
-            Details <ExternalLink size={15} />
+            {t('explore.details')} <ExternalLink size={15} />
           </a>
         )}
         {(o.kind === 'competition' || o.kind === 'conference' || o.kind === 'volunteer' || o.kind === 'culture') &&
           (isMember ? (
             <Link to={teamHref} className={`${buttonSecondary} px-4 py-2.5`}>
-              <Users size={15} /> Find teammates
+              <Users size={15} /> {t('explore.findTeammates')}
             </Link>
           ) : (
             !signedIn && (
               <Link to="/login?next=/explore" className={`${buttonSecondary} px-4 py-2.5`}>
-                <Users size={15} /> Go with others
+                <Users size={15} /> {t('explore.goWithOthers')}
               </Link>
             )
           ))}
@@ -374,6 +429,7 @@ function OpportunityForm({
   onDone: () => Promise<void>
   onCancel: () => void
 }) {
+  const { t } = useLanguage()
   const [form, setForm] = useState<OpportunityInput>(() => {
     if (!initial) return { ...EMPTY, status: canPublish ? 'published' : 'suggested' }
     const { id, created_by, created_at, updated_at, ...rest } = initial
@@ -390,9 +446,9 @@ function OpportunityForm({
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (form.title.trim().length < 3) return setError('Add a title.')
-    if (form.url && !/^https?:\/\//.test(form.url.trim())) return setError('The link should start with https://')
-    if (form.start_date && form.end_date && form.end_date < form.start_date) return setError('End date is before the start date.')
+    if (form.title.trim().length < 3) return setError(t('explore.errorTitle'))
+    if (form.url && !/^https?:\/\//.test(form.url.trim())) return setError(t('explore.errorLink'))
+    if (form.start_date && form.end_date && form.end_date < form.start_date) return setError(t('explore.errorDate'))
     setBusy(true)
     try {
       const clean = (v: string | null) => (v && v.trim() ? v.trim() : null)
@@ -421,65 +477,65 @@ function OpportunityForm({
   return (
     <form onSubmit={submit} className={`${card} space-y-4 p-5 sm:p-6`}>
       <div>
-        <h2 className="text-lg font-bold">{initial ? 'Edit listing' : canPublish ? 'Add a listing' : 'Suggest an opportunity'}</h2>
-        {!canPublish && <p className="text-sm text-slate-500">An organizer checks suggestions before they appear for everyone.</p>}
+        <h2 className="text-lg font-bold">{initial ? t('explore.editListing') : canPublish ? t('explore.addListing') : t('explore.suggest')}</h2>
+        {!canPublish && <p className="text-sm text-slate-500">{t('explore.reviewHint')}</p>}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium sm:col-span-2">
-          Title *
-          <input value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={150} placeholder="e.g. ASEAN-Korean Youth Network Night" className={inputClass} />
+          {t('explore.titleLabel')} *
+          <input value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={150} placeholder={t('explore.titlePlaceholder')} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Organizer
-          <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} maxLength={120} placeholder="e.g. AYNK, Embassy of Malaysia" className={inputClass} />
+          {t('explore.organizer')}
+          <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} maxLength={120} placeholder={t('explore.organizerPlaceholder')} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Location
-          <input value={form.location} onChange={(e) => set('location', e.target.value)} maxLength={200} placeholder="City, venue or Zoom" className={inputClass} />
+          {t('explore.location')}
+          <input value={form.location} onChange={(e) => set('location', e.target.value)} maxLength={200} placeholder={t('explore.locationPlaceholder')} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Type
+          {t('explore.type')}
           <select value={form.kind} onChange={(e) => set('kind', e.target.value as OpportunityKind)} className={inputClass}>
             {(Object.keys(OPPORTUNITY_KINDS) as OpportunityKind[]).map((k) => (
-              <option key={k} value={k}>{OPPORTUNITY_KINDS[k].emoji} {OPPORTUNITY_KINDS[k].label}</option>
+              <option key={k} value={k}>{OPPORTUNITY_KINDS[k].emoji} {t(OPPORTUNITY_KIND_KEYS[k])}</option>
             ))}
           </select>
         </label>
         <label className="text-sm font-medium">
-          Where
+          {t('explore.where')}
           <select value={form.scope} onChange={(e) => set('scope', e.target.value as OpportunityScope)} className={inputClass}>
             {(Object.keys(OPPORTUNITY_SCOPES) as OpportunityScope[]).map((s) => (
-              <option key={s} value={s}>{OPPORTUNITY_SCOPES[s].emoji} {OPPORTUNITY_SCOPES[s].label}</option>
+              <option key={s} value={s}>{OPPORTUNITY_SCOPES[s].emoji} {t(OPPORTUNITY_SCOPE_KEYS[s])}</option>
             ))}
           </select>
         </label>
         <label className="text-sm font-medium">
-          Starts
+          {t('explore.starts')}
           <input type="date" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value)} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Ends
+          {t('explore.ends')}
           <input type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value)} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Apply by
+          {t('explore.applyBy')}
           <input type="date" value={form.apply_deadline ?? ''} onChange={(e) => set('apply_deadline', e.target.value)} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          Link
+          {t('explore.link')}
           <input type="url" value={form.url ?? ''} onChange={(e) => set('url', e.target.value)} placeholder="https://" className={inputClass} />
         </label>
         <label className="text-sm font-medium sm:col-span-2">
-          Short description
+          {t('explore.shortDescription')}
           <textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={3000} className={inputClass} />
         </label>
         {canPublish && (
           <label className="text-sm font-medium">
-            Status
+            {t('explore.status')}
             <select value={form.status} onChange={(e) => set('status', e.target.value as OpportunityInput['status'])} className={inputClass}>
-              <option value="published">Published (everyone sees it)</option>
-              <option value="suggested">Draft / suggestion</option>
-              <option value="archived">Archived (hidden)</option>
+              <option value="published">{t('explore.published')}</option>
+              <option value="suggested">{t('explore.draft')}</option>
+              <option value="archived">{t('explore.archived')}</option>
             </select>
           </label>
         )}
@@ -487,20 +543,20 @@ function OpportunityForm({
       <ErrorBox>{error}</ErrorBox>
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={busy} className={buttonPrimary}>
-          {busy ? 'Saving…' : initial ? 'Save' : canPublish ? 'Publish' : 'Send suggestion'}
+          {busy ? t('explore.saving') : initial ? t('explore.save') : canPublish ? t('explore.publish') : t('explore.sendSuggestion')}
         </button>
-        <button type="button" onClick={onCancel} className={buttonSecondary}>Cancel</button>
+        <button type="button" onClick={onCancel} className={buttonSecondary}>{t('explore.cancel')}</button>
         {initial && canPublish && (
           <button
             type="button"
             onClick={async () => {
-              if (!window.confirm('Delete this listing?')) return
+              if (!window.confirm(t('explore.deleteListingConfirm'))) return
               await deleteOpportunity(initial.id)
               await onDone()
             }}
             className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-red-600"
           >
-            <Trash2 size={15} /> Delete
+            <Trash2 size={15} /> {t('explore.delete')}
           </button>
         )}
       </div>

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { listEvents, listMyRsvps, listRsvpCounts } from '../lib/api'
 import { eventTimeRange, isPast, todayKst } from '../lib/format'
 import { CATEGORIES } from '../lib/types'
@@ -14,7 +15,8 @@ import { EmptyState, ErrorBox, PageHeader, Spinner, buttonPrimary } from '../com
 type View = 'upcoming' | 'calendar' | 'past'
 
 export default function EventsPage() {
-  usePageMeta('Events', 'Upcoming PPMK and EMSU events. RSVP with one tap.')
+  const { t, language } = useLanguage()
+  usePageMeta(t('events.title'), t('events.meta'))
   const { session, isOrganizer } = useAuth()
   const userId = session!.user.id
 
@@ -82,14 +84,14 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Community"
-        title="Events"
-        description="Find events and RSVP in one tap. Your details are already filled in."
+        eyebrow={t('footer.community')}
+        title={t('events.title')}
+        description={t('events.description')}
         action={
           isOrganizer && (
             <Link to="/organizer?new=1" className={buttonPrimary}>
               <Plus size={16} />
-              New event
+              {t('events.newEvent')}
             </Link>
           )
         }
@@ -99,7 +101,7 @@ export default function EventsPage() {
         to="/explore"
         className="flex items-center justify-between rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm font-semibold text-slate-700 hover:border-primary md:hidden"
       >
-        Explore events around Korea
+        {t('events.exploreAroundKorea')}
         <span aria-hidden>→</span>
       </Link>
 
@@ -112,35 +114,45 @@ export default function EventsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search events or places…"
-            aria-label="Search events"
+            placeholder={t('events.search')}
+            aria-label={t('events.searchLabel')}
             className="w-full rounded-xl border border-slate-200 bg-surface py-3 pl-10 pr-4 text-sm outline-none focus:border-primary"
           />
         </div>
 
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {['All', ...CATEGORIES].map((item) => (
-            <button
-              key={item}
-              onClick={() => setCategory(item)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
-                category === item
-                  ? 'bg-primary text-white'
-                  : 'border border-slate-200 bg-surface text-slate-600'
-              }`}
-            >
-              {item}
-            </button>
-          ))}
+          {['All', ...CATEGORIES].map((item) => {
+            const categoryKey: Record<string, TranslationKey> = {
+              Sports: 'category.sports',
+              Social: 'category.social',
+              Academic: 'category.academic',
+              Career: 'category.career',
+              Cultural: 'category.cultural',
+              Religious: 'category.religious',
+            }
+            return (
+              <button
+                key={item}
+                onClick={() => setCategory(item)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
+                  category === item
+                    ? 'bg-primary text-white'
+                    : 'border border-slate-200 bg-surface text-slate-600'
+                }`}
+              >
+                {item === 'All' ? t('discuss.all') : t(categoryKey[item])}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       <div className="flex rounded-xl bg-slate-100 p-1" role="tablist">
         {(
           [
-            ['upcoming', 'Upcoming'],
-            ['calendar', 'Calendar'],
-            ['past', 'Past'],
+            ['upcoming', t('events.upcoming')],
+            ['calendar', t('events.calendar')],
+            ['past', t('events.past')],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -174,17 +186,17 @@ export default function EventsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState title={view === 'past' ? 'No past events' : 'No upcoming events'}>
+          <EmptyState title={view === 'past' ? t('events.noPast') : t('events.noUpcoming')}>
             {search || category !== 'All'
-              ? 'Try another search or category.'
-              : 'New events will appear here as soon as organizers post them.'}
+              ? t('events.trySearch')
+              : t('events.newWillAppear')}
           </EmptyState>
         )
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-surface p-4">
           <div className="mb-4 flex items-center justify-between">
             <button
-              aria-label="Previous month"
+              aria-label={t('events.previousMonth')}
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
               className="rounded-lg p-2 hover:bg-slate-100"
             >
@@ -192,11 +204,11 @@ export default function EventsPage() {
             </button>
 
             <h2 className="font-bold">
-              {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+              {month.toLocaleDateString(language === 'ko' ? 'ko-KR' : language === 'ms' ? 'ms-MY' : 'en-GB', { month: 'long', year: 'numeric' })}
             </h2>
 
             <button
-              aria-label="Next month"
+              aria-label={t('events.nextMonth')}
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
               className="rounded-lg p-2 hover:bg-slate-100"
             >
@@ -205,9 +217,9 @@ export default function EventsPage() {
           </div>
 
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-              <div key={`${day}-${index}`} className="py-2">
-                {day}
+            {Array.from({ length: 7 }, (_, index) => (
+              <div key={index} className="py-2">
+                {new Date(2023, 0, index + 1).toLocaleDateString(language === 'ko' ? 'ko-KR' : language === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short' }).slice(0, 1)}
               </div>
             ))}
           </div>
@@ -222,7 +234,7 @@ export default function EventsPage() {
               return (
                 <button
                   key={dateKey}
-                  aria-label={`${dateKey}${count ? `, ${count} events` : ''}`}
+                  aria-label={`${dateKey}${count ? `, ${count} ${t('events.eventCount')}` : ''}`}
                   onClick={() => setSelectedDate(count ? dateKey : null)}
                   className={`relative h-12 rounded-lg text-sm ${
                     selected
@@ -248,7 +260,7 @@ export default function EventsPage() {
           {selectedDate && (
             <div className="mt-5 space-y-2 border-t border-slate-200 pt-5">
               <p className="text-sm font-bold">
-                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', {
+                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(language === 'ko' ? 'ko-KR' : language === 'ms' ? 'ms-MY' : 'en-GB', {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',

@@ -3,15 +3,32 @@ import { Link } from 'react-router-dom'
 import { CalendarClock, ChevronRight, Plus, Search, Users } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { listClubMemberCounts, listClubs, listMyClubMemberships } from '../lib/api'
-import { CLUB_ROLE_LABEL } from '../lib/types'
+import type { ClubRole } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import ClubAvatar from '../components/ClubAvatar'
 import { EmptyState, ErrorBox, PageHeader, Spinner, buttonPrimary, card, inputClass } from '../components/ui'
 
+const roleTranslation: Record<ClubRole, TranslationKey> = {
+  president: 'clubRole.president',
+  vice_president: 'clubRole.vicePresident',
+  committee: 'clubRole.committee',
+  member: 'clubRole.member',
+}
+const categoryTranslation: Record<string, TranslationKey> = {
+  Sports: 'category.sports',
+  Social: 'category.social',
+  Academic: 'category.academic',
+  Career: 'category.career',
+  Cultural: 'category.cultural',
+  Religious: 'category.religious',
+}
+
 export default function ClubsPage() {
-  usePageMeta('Clubs', 'Clubs under PPMK: find one, ask to join, or start your own.')
+  const { t } = useLanguage()
+  usePageMeta(t('clubs.title'), t('clubs.meta'))
   const { session } = useAuth()
   const userId = session!.user.id
 
@@ -39,13 +56,13 @@ export default function ClubsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Community"
-        title="Clubs"
-        description="Clubs registered under PPMK. Open a club to see what they're up to, or ask to join."
+        eyebrow={t('footer.community')}
+        title={t('clubs.title')}
+        description={t('clubs.description')}
         action={
           <Link to="/clubs/apply" className={buttonPrimary}>
             <Plus size={16} />
-            Start a club
+            {t('clubs.startClub')}
           </Link>
         }
       />
@@ -56,8 +73,8 @@ export default function ClubsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search clubs"
-            aria-label="Search clubs"
+            placeholder={t('clubs.search')}
+            aria-label={t('clubs.search')}
             className={`${inputClass} mt-0 pl-9`}
           />
         </div>
@@ -70,7 +87,7 @@ export default function ClubsPage() {
                 category === item ? 'bg-primary text-white' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
               }`}
             >
-              {item}
+              {item === 'All' ? t('clubs.all') : categoryTranslation[item] ? t(categoryTranslation[item]) : item}
             </button>
           ))}
         </div>
@@ -81,8 +98,8 @@ export default function ClubsPage() {
       ) : error ? (
         <ErrorBox>{error}</ErrorBox>
       ) : mineFirst.length === 0 ? (
-        <EmptyState title="No clubs found">
-          <Link to="/clubs/apply" className="font-semibold text-primary">Start one</Link>
+        <EmptyState title={t('clubs.noClubs')}>
+          <Link to="/clubs/apply" className="font-semibold text-primary">{t('clubs.startOne')}</Link>
         </EmptyState>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -115,7 +132,7 @@ export default function ClubsPage() {
                   )}
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Users size={14} /> {count?.members ?? 0} members
+                      <Users size={14} />                       {count?.members ?? 0} {t('club.memberCount')}
                     </span>
                     {mine ? (
                       <span
@@ -123,15 +140,15 @@ export default function ClubsPage() {
                           mine.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
                         }`}
                       >
-                        {mine.status === 'pending' ? 'Requested' : CLUB_ROLE_LABEL[mine.role]}
+                        {mine.status === 'pending' ? t('clubs.requested') : t(roleTranslation[mine.role])}
                       </span>
                     ) : (
-                      <span className="font-semibold text-primary">{club.join_policy === 'open' ? 'Join' : 'Ask to join'}</span>
+                      <span className="font-semibold text-primary">{club.join_policy === 'open' ? t('clubs.join') : t('clubs.askToJoin')}</span>
                     )}
                   </div>
                   {count && count.pending > 0 && (
                     <p className="rounded-lg bg-amber-50 px-2 py-1 font-semibold text-amber-700">
-                      {count.pending} join {count.pending === 1 ? 'request' : 'requests'} waiting
+                      {count.pending} {t('clubs.requestWaiting')}
                     </p>
                   )}
                 </div>
