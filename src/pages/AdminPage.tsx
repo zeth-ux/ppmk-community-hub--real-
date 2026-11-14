@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ExternalLink, FileText, ImageIcon, Pencil, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   adminSetClubPresident,
   listPendingPhotos,
@@ -33,13 +34,14 @@ import {
 } from '../components/ui'
 
 export default function AdminPage() {
-  usePageMeta('Admin')
+  const { t } = useLanguage()
+  usePageMeta(t('nav.admin'))
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Admin"
-        title="Run the hub"
-        description="Club applications, members, organizer roles and clubs. Everything here can be done without touching code."
+        eyebrow={t('nav.admin')}
+        title={t('admin.runHub')}
+        description={t('admin.description')}
       />
       <StatsSection />
       <PhotoReviewSection />
@@ -52,6 +54,7 @@ export default function AdminPage() {
 }
 
 function StatsSection() {
+  const { t } = useLanguage()
   const { data, loading, error } = useLoader(getHubStats, [])
   const { data: ai } = useLoader(() => getAiUsageStats().catch(() => []), [])
 
@@ -59,24 +62,28 @@ function StatsSection() {
   if (error) return <ErrorBox>{error}</ErrorBox>
   if (!data) return null
 
-  const tiles = [
-    ['Members', data.members],
-    ['Profiles complete', data.complete_profiles],
-    ['Organizers & admins', data.organizers],
-    ['Events', data.events],
-    ['Upcoming events', data.upcoming_events],
-    ['RSVPs', data.rsvps],
-    ['Check-ins', data.check_ins],
+  const tiles: [TranslationKey, number][] = [
+    ['admin.members', data.members],
+    ['admin.profilesComplete', data.complete_profiles],
+    ['admin.organizersAdmins', data.organizers],
+    ['admin.events', data.events],
+    ['admin.upcomingEvents', data.upcoming_events],
+    ['admin.rsvps', data.rsvps],
+    ['admin.checkIns', data.check_ins],
   ] as const
 
-  const aiLabel = { extract: 'AI event fills', announce: 'AI announcements', ask: 'Chatbot questions' }
+  const aiLabel: Record<NonNullable<typeof ai>[number]['kind'], TranslationKey> = {
+    extract: 'admin.aiEventFills',
+    announce: 'admin.aiAnnouncements',
+    ask: 'admin.chatbotQuestions',
+  }
 
   return (
     <div className="space-y-3">
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {tiles.map(([label, value]) => (
           <div key={label} className={`${card} p-4`}>
-            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="text-xs font-semibold text-slate-500">{t(label)}</p>
             <p className="mt-1 text-2xl font-bold">{value}</p>
           </div>
         ))}
@@ -85,10 +92,10 @@ function StatsSection() {
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ai.map((row) => (
             <div key={row.kind} className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
-              <p className="text-xs font-semibold text-violet-700">{aiLabel[row.kind]}</p>
+              <p className="text-xs font-semibold text-violet-700">{t(aiLabel[row.kind])}</p>
               <p className="mt-1 text-2xl font-bold">{row.total}</p>
               <p className="text-xs text-slate-500">
-                {row.last_7_days} this week · {row.people} {row.people === 1 ? 'person' : 'people'}
+                {row.last_7_days} {t('admin.thisWeek')} · {row.people} {t(row.people === 1 ? 'admin.person' : 'admin.people')}
               </p>
             </div>
           ))}
@@ -99,6 +106,7 @@ function StatsSection() {
 }
 
 function MembersSection() {
+  const { t } = useLanguage()
   const { session } = useAuth()
   const { data, setData, loading, error } = useLoader(listAllProfiles, [])
   const [search, setSearch] = useState('')
@@ -130,9 +138,9 @@ function MembersSection() {
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold">Members</h2>
+          <h2 className="text-lg font-bold">{t('admin.members')}</h2>
           <p className="text-sm text-slate-500">
-            Make someone an <strong>organizer</strong> so they can create events and see attendee lists.
+            {t('admin.makeOrganizer')}
           </p>
         </div>
         <div className="relative w-full sm:w-64">
@@ -140,8 +148,8 @@ function MembersSection() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search members"
-            aria-label="Search members"
+            placeholder={t('admin.searchMembers')}
+            aria-label={t('admin.searchMembers')}
             className={`${inputClass} mt-0 pl-9`}
           />
         </div>
@@ -158,21 +166,21 @@ function MembersSection() {
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500">
               <tr>
-                <th className="px-5 py-3 sm:px-6">Name</th>
-                <th className="px-3 py-3">Email</th>
-                <th className="px-3 py-3">Student ID</th>
-                <th className="px-3 py-3">Batch</th>
-                <th className="px-3 py-3">Phone</th>
-                <th className="px-5 py-3 sm:px-6">Role</th>
+                <th className="px-5 py-3 sm:px-6">{t('admin.name')}</th>
+                <th className="px-3 py-3">{t('admin.email')}</th>
+                <th className="px-3 py-3">{t('admin.studentId')}</th>
+                <th className="px-3 py-3">{t('admin.batch')}</th>
+                <th className="px-3 py-3">{t('admin.phone')}</th>
+                <th className="px-5 py-3 sm:px-6">{t('admin.role')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {visible.map((p) => (
                 <tr key={p.id}>
                   <td className="px-5 py-3 font-semibold sm:px-6">
-                    {p.full_name ?? <span className="font-normal italic text-slate-400">No profile yet</span>}
+                    {p.full_name ?? <span className="font-normal italic text-slate-400">{t('admin.noProfile')}</span>}
                     {!isProfileComplete(p) && p.full_name && (
-                      <span className="ml-2 text-xs font-normal text-amber-600">incomplete</span>
+                      <span className="ml-2 text-xs font-normal text-amber-600">{t('admin.incomplete')}</span>
                     )}
                     {p.username && <span className="block text-xs font-normal text-slate-500">@{p.username}</span>}
                   </td>
@@ -187,12 +195,12 @@ function MembersSection() {
                       aria-label={`Role for ${p.full_name ?? p.email}`}
                       className="rounded-lg border border-slate-200 bg-surface px-2 py-1.5 text-sm"
                     >
-                      <option value="student">Student</option>
-                      <option value="organizer">Organizer</option>
-                      <option value="admin">Admin</option>
+                      <option value="student">{t('admin.roleStudent')}</option>
+                      <option value="organizer">{t('admin.roleOrganizer')}</option>
+                      <option value="admin">{t('admin.roleAdmin')}</option>
                     </select>
                     {p.id === session?.user.id && (
-                      <span className="ml-2 text-xs text-slate-400">(you)</span>
+                      <span className="ml-2 text-xs text-slate-400">{t('admin.you')}</span>
                     )}
                   </td>
                 </tr>
@@ -225,6 +233,7 @@ const EMPTY_CLUB: ClubInput = {
 }
 
 function ClubsSection() {
+  const { t } = useLanguage()
   const { data, loading, error, reload } = useLoader(listClubs, [])
   const { data: people } = useLoader(() => listAllProfiles().catch(() => [] as Profile[]), [])
   const [editing, setEditing] = useState<Club | 'new' | null>(null)
@@ -248,7 +257,7 @@ function ClubsSection() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (form.name.trim().length < 2) {
-      setActionError('Club name is required.')
+      setActionError(t('admin.clubNameRequired'))
       return
     }
     try {
@@ -273,7 +282,7 @@ function ClubsSection() {
   }
 
   async function remove(club: Club) {
-    if (!window.confirm(`Delete ${club.name}? Its events stay, but lose the club link.`)) return
+    if (!window.confirm(t('admin.deleteClubConfirm').replace('{name}', club.name))) return
     try {
       await deleteClub(club.id)
       await reload()
@@ -285,10 +294,10 @@ function ClubsSection() {
   return (
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Clubs</h2>
+        <h2 className="text-lg font-bold">{t('clubs.title')}</h2>
         <button onClick={() => start('new')} className={buttonSecondary}>
           <Plus size={16} />
-          Add club
+          {t('admin.addClub')}
         </button>
       </div>
 
@@ -299,29 +308,29 @@ function ClubsSection() {
       {editing && (
         <form onSubmit={submit} className="mt-4 grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
           <label className="text-sm font-medium">
-            Name *
+            {t('admin.name')} *
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
           </label>
           <label className="text-sm font-medium">
-            Category
+            {t('admin.category')}
             <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass} />
           </label>
           <label className="text-sm font-medium sm:col-span-2">
-            Description
+            {t('admin.descriptionField')}
             <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} />
           </label>
           <label className="text-sm font-medium">
-            Leader name
+            {t('admin.leaderName')}
             <input value={form.leader_name ?? ''} onChange={(e) => setForm({ ...form, leader_name: e.target.value })} className={inputClass} />
           </label>
           <label className="text-sm font-medium">
-            Leader contact (Kakao ID, email…)
+            {t('admin.leaderContact')}
             <input value={form.leader_contact ?? ''} onChange={(e) => setForm({ ...form, leader_contact: e.target.value })} className={inputClass} />
           </label>
           <label className="text-sm font-medium sm:col-span-2">
-            Set a club president <span className="font-normal text-slate-500">(they become an organizer and can manage the club page)</span>
+            {t('admin.setPresident')} <span className="font-normal text-slate-500">{t('admin.presidentHint')}</span>
             <select value={president} onChange={(e) => setPresident(e.target.value)} className={inputClass}>
-              <option value="">Keep as is</option>
+              <option value="">{t('admin.keepAsIs')}</option>
               {(people ?? [])
                 .filter((p) => p.username)
                 .map((p) => (
@@ -332,12 +341,12 @@ function ClubsSection() {
             </select>
           </label>
           <label className="text-sm font-medium sm:col-span-2">
-            Join link (group chat or form)
+            {t('admin.joinLink')}
             <input type="url" value={form.join_url ?? ''} onChange={(e) => setForm({ ...form, join_url: e.target.value })} placeholder="https://" className={inputClass} />
           </label>
           <div className="flex gap-2 sm:col-span-2">
-            <button type="submit" className={buttonPrimary}>Save club</button>
-            <button type="button" onClick={() => setEditing(null)} className={buttonSecondary}>Cancel</button>
+            <button type="submit" className={buttonPrimary}>{t('admin.saveClub')}</button>
+            <button type="button" onClick={() => setEditing(null)} className={buttonSecondary}>{t('admin.cancel')}</button>
           </div>
         </form>
       )}
@@ -352,14 +361,14 @@ function ClubsSection() {
                 <p className="font-semibold">{club.name}</p>
                 <p className="truncate text-xs text-slate-500">
                   {club.category}
-                  {club.leader_name && ` · Led by ${club.leader_name}`}
+                  {club.leader_name && ` · ${t('admin.ledBy')} ${club.leader_name}`}
                 </p>
               </Link>
               <div className="flex shrink-0 gap-1">
-                <button onClick={() => start(club)} aria-label={`Edit ${club.name}`} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
+                <button onClick={() => start(club)} aria-label={t('admin.editClub').replace('{name}', club.name)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
                   <Pencil size={16} />
                 </button>
-                <button onClick={() => void remove(club)} aria-label={`Delete ${club.name}`} className="rounded-lg p-2 text-red-600 hover:bg-red-50">
+                <button onClick={() => void remove(club)} aria-label={t('admin.deleteClub').replace('{name}', club.name)} className="rounded-lg p-2 text-red-600 hover:bg-red-50">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -379,6 +388,7 @@ const REJECT_REASONS = [
 ]
 
 function PhotoReviewSection() {
+  const { t } = useLanguage()
   const { data, setData, loading, error } = useLoader(listPendingPhotos, [])
   const { data: people } = useLoader(() => listAllProfiles().catch(() => [] as Profile[]), [])
   const [rejecting, setRejecting] = useState<string | null>(null)
@@ -400,27 +410,33 @@ function PhotoReviewSection() {
   const photos = data ?? []
   const who = (id: string) => {
     const p = people?.find((x) => x.id === id)
-    return p?.username ? `@${p.username}` : (p?.full_name ?? 'someone')
+    return p?.username ? `@${p.username}` : (p?.full_name ?? t('admin.unknown'))
+  }
+  const rejectReasonKeys: Record<(typeof REJECT_REASONS)[number], TranslationKey> = {
+    'Not appropriate for the hub': 'admin.rejectReasonHub',
+    'Shows people who may not have agreed': 'admin.rejectReasonConsent',
+    'Shows personal info (ID, address, phone)': 'admin.rejectReasonPersonal',
+    'Not related to the post': 'admin.rejectReasonUnrelated',
   }
 
   return (
     <section className={`${card} p-5 sm:p-6`}>
       <h2 className="flex items-center gap-2 text-lg font-bold">
-        <ImageIcon size={19} className="text-primary" /> Photos to review
+        <ImageIcon size={19} className="text-primary" /> {t('admin.photoReview')}
         {photos.length > 0 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white">{photos.length}</span>}
       </h2>
-      <p className="text-sm text-slate-500">Nobody else sees a photo until you approve it. Rejected photos stay hidden and the uploader sees your reason.</p>
+      <p className="text-sm text-slate-500">{t('admin.photoReviewHint')}</p>
       <div className="mt-3"><ErrorBox>{error || actionError}</ErrorBox></div>
       {loading ? (
         <Spinner />
       ) : photos.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">All caught up. 🎉</p>
+        <p className="mt-3 text-sm text-slate-500">{t('admin.allCaughtUp')}</p>
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {photos.map((p) => (
             <li key={p.id} className="overflow-hidden rounded-xl border border-slate-200">
-              <button onClick={() => setOpen(p.url)} className="block aspect-[4/3] w-full bg-slate-100" aria-label="View full size">
-                <img src={p.url} alt={`Photo waiting for review, uploaded by ${who(p.uploaded_by)}`} className="h-full w-full object-cover" />
+              <button onClick={() => setOpen(p.url)} className="block aspect-[4/3] w-full bg-slate-100" aria-label={t('admin.viewFullSize')}>
+                <img src={p.url} alt={t('admin.photoWaiting').replace('{name}', who(p.uploaded_by))} className="h-full w-full object-cover" />
               </button>
               <div className="space-y-2 p-3 text-sm">
                 <p className="text-xs text-slate-500">
@@ -434,20 +450,20 @@ function PhotoReviewSection() {
                 {rejecting === p.id ? (
                   <div className="space-y-2">
                     <select value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm">
-                      {REJECT_REASONS.map((r) => <option key={r}>{r}</option>)}
+                      {REJECT_REASONS.map((r) => <option key={r} value={r}>{t(rejectReasonKeys[r])}</option>)}
                     </select>
                     <div className="flex gap-2">
-                      <button onClick={() => void decide(p.id, false)} className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 font-bold text-white">Reject</button>
-                      <button onClick={() => setRejecting(null)} className="rounded-lg px-3 py-1.5 font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
+                      <button onClick={() => void decide(p.id, false)} className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 font-bold text-white">{t('admin.reject')}</button>
+                      <button onClick={() => setRejecting(null)} className="rounded-lg px-3 py-1.5 font-semibold text-slate-500 hover:bg-slate-100">{t('admin.cancel')}</button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex gap-2">
                     <button onClick={() => void decide(p.id, true)} className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 font-bold text-white">
-                      <Check size={15} /> Approve
+                      <Check size={15} /> {t('admin.approve')}
                     </button>
                     <button onClick={() => setRejecting(p.id)} className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-red-700 hover:bg-red-50">
-                      <X size={15} /> Reject
+                      <X size={15} /> {t('admin.reject')}
                     </button>
                   </div>
                 )}
@@ -458,8 +474,8 @@ function PhotoReviewSection() {
       )}
       {open && (
         <div role="dialog" aria-modal="true" onClick={() => setOpen(null)} className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4">
-          <img src={open} alt="Photo under review, full size" className="max-h-full max-w-full rounded-lg object-contain" />
-          <button aria-label="Close" className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white"><X size={22} /></button>
+          <img src={open} alt={t('admin.viewFullSize')} className="max-h-full max-w-full rounded-lg object-contain" />
+          <button aria-label={t('admin.close')} className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white"><X size={22} /></button>
         </div>
       )}
     </section>
@@ -467,6 +483,7 @@ function PhotoReviewSection() {
 }
 
 function ApplicationsSection() {
+  const { t } = useLanguage()
   const { data, loading, error, reload } = useLoader(async () => {
     const [apps, people] = await Promise.all([listClubApplications(), listAllProfiles()])
     return { apps, people }
@@ -484,7 +501,7 @@ function ApplicationsSection() {
 
   async function decide(a: ClubApplication, decision: 'approved' | 'needs_changes' | 'rejected') {
     if (decision !== 'approved' && !note.trim()) {
-      setActionError('Write a short note so the applicant knows what to do.')
+      setActionError(t('admin.writeNote'))
       return
     }
     setBusy(true)
@@ -507,6 +524,20 @@ function ApplicationsSection() {
     approved: 'bg-green-50 text-green-700',
     rejected: 'bg-slate-100 text-slate-600',
   }
+  const statusLabels: Record<ClubApplication['status'], TranslationKey> = {
+    pending: 'admin.statusPending',
+    needs_changes: 'admin.statusNeedsChanges',
+    approved: 'admin.statusApproved',
+    rejected: 'admin.statusRejected',
+  }
+  const docTitleKeys: Record<(typeof CLUB_DOCUMENTS)[number]['key'], TranslationKey> = {
+    constitution: 'clubApply.doc.constitution',
+    member_list: 'clubApply.doc.memberList',
+    activity_plan: 'clubApply.doc.activityPlan',
+    committee_list: 'clubApply.doc.committeeList',
+    budget: 'clubApply.doc.budget',
+    advisor_letter: 'clubApply.doc.advisorLetter',
+  }
 
   const row = (a: ClubApplication) => {
     const who = applicant(a)
@@ -524,12 +555,12 @@ function ApplicationsSection() {
           <div className="min-w-0">
             <p className="font-bold">{a.club_name} <span className="text-xs font-normal text-slate-500">· {a.category}</span></p>
             <p className="truncate text-xs text-slate-500">
-              by {who?.username ? `@${who.username}` : who?.full_name ?? 'unknown'}
+              {t('admin.applicantBy')} {who?.username ? `@${who.username}` : who?.full_name ?? t('admin.unknown')}
               {who?.full_name && who.username ? ` (${who.full_name})` : ''} · {timeAgo(a.created_at)}
             </p>
           </div>
           <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}>
-            {a.status.replace('_', ' ')}
+            {t(statusLabels[a.status])}
           </span>
         </button>
         {isOpen && (
@@ -537,11 +568,11 @@ function ApplicationsSection() {
             {a.tagline && <p className="italic text-slate-600">“{a.tagline}”</p>}
             <dl className="grid gap-3 sm:grid-cols-2">
               {([
-                ['About', a.description],
-                ['Objectives', a.objectives],
-                ['Planned activities', a.activities_plan],
-                ['Founding members', a.founding_members],
-                ['Advisor', a.advisor_name],
+                [t('admin.about'), a.description],
+                [t('admin.objectives'), a.objectives],
+                [t('admin.plannedActivities'), a.activities_plan],
+                [t('admin.foundingMembers'), a.founding_members],
+                [t('admin.advisor'), a.advisor_name],
               ] as const).map(([label, value]) =>
                 value ? (
                   <div key={label}>
@@ -552,17 +583,17 @@ function ApplicationsSection() {
               )}
             </dl>
             <div>
-              <p className="text-xs font-semibold text-slate-400">Documents</p>
+              <p className="text-xs font-semibold text-slate-400">{t('admin.documents')}</p>
               <ul className="mt-1 grid gap-1 sm:grid-cols-2">
                 {CLUB_DOCUMENTS.map((d) => (
                   <li key={d.key} className="flex items-center gap-2">
                     <FileText size={14} className="text-slate-400" />
                     {a.documents[d.key] ? (
                       <a href={a.documents[d.key]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
-                        {d.title} <ExternalLink size={12} />
+                        {t(docTitleKeys[d.key])} <ExternalLink size={12} />
                       </a>
                     ) : (
-                      <span className={d.required ? 'text-red-600' : 'text-slate-400'}>{d.title}: missing</span>
+                      <span className={d.required ? 'text-red-600' : 'text-slate-400'}>{t(docTitleKeys[d.key])}: {t('admin.missing')}</span>
                     )}
                   </li>
                 ))}
@@ -571,26 +602,26 @@ function ApplicationsSection() {
             {(a.status === 'pending' || a.status === 'needs_changes') && (
               <>
                 <label className="block font-medium">
-                  Note to the applicant
-                  <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Needed for 'Ask for changes' and 'Reject'" className={inputClass} />
+                  {t('admin.applicantNote')}
+                  <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('admin.noteHint')} className={inputClass} />
                 </label>
                 <ErrorBox>{actionError}</ErrorBox>
                 <div className="flex flex-wrap gap-2">
                   <button disabled={busy} onClick={() => void decide(a, 'approved')} className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2.5 font-bold text-white disabled:opacity-50">
-                    <Check size={16} /> Approve &amp; create club
+                    <Check size={16} /> {t('admin.approveCreateClub')}
                   </button>
                   <button disabled={busy} onClick={() => void decide(a, 'needs_changes')} className={buttonSecondary}>
-                    <Pencil size={15} /> Ask for changes
+                    <Pencil size={15} /> {t('admin.askChanges')}
                   </button>
                   <button disabled={busy} onClick={() => void decide(a, 'rejected')} className={`${buttonSecondary} text-red-700`}>
-                    <X size={15} /> Reject
+                    <X size={15} /> {t('admin.reject')}
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">Approving creates the club page and makes the applicant its president (with organizer access).</p>
+                <p className="text-xs text-slate-500">{t('admin.approvalHint')}</p>
               </>
             )}
             {a.status === 'approved' && a.club_id && (
-              <Link to={`/clubs/${a.club_id}`} className="inline-flex items-center gap-1 font-semibold text-primary">Open club page</Link>
+              <Link to={`/clubs/${a.club_id}`} className="inline-flex items-center gap-1 font-semibold text-primary">{t('admin.openClubPage')}</Link>
             )}
           </div>
         )}
@@ -603,25 +634,25 @@ function ApplicationsSection() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold">
-            Club applications
-            {waiting.length > 0 && <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white">{waiting.length} waiting</span>}
+            {t('admin.clubApplications')}
+            {waiting.length > 0 && <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-xs text-white">{waiting.length} {t('admin.waiting')}</span>}
           </h2>
-          <p className="text-sm text-slate-500">Students apply from the Clubs page. Check their documents, then decide.</p>
+          <p className="text-sm text-slate-500">{t('admin.applicationsHint')}</p>
         </div>
       </div>
       <div className="mt-3"><ErrorBox>{error}</ErrorBox></div>
       {loading ? (
         <Spinner />
       ) : apps.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">No applications yet.</p>
+        <p className="mt-3 text-sm text-slate-500">{t('admin.noApplications')}</p>
       ) : (
         <>
           <ul className="mt-4 space-y-2">{waiting.map(row)}</ul>
-          {waiting.length === 0 && <p className="mt-3 text-sm text-slate-500">Nothing waiting. 🎉</p>}
+          {waiting.length === 0 && <p className="mt-3 text-sm text-slate-500">{t('admin.nothingWaiting')}</p>}
           {others.length > 0 && (
             <div className="mt-4">
               <button onClick={() => setShowDone(!showDone)} className="text-sm font-semibold text-slate-500 hover:text-primary">
-                {showDone ? 'Hide' : 'Show'} {others.length} other {others.length === 1 ? 'application' : 'applications'}
+                {showDone ? t('admin.hide') : t('admin.show')} {others.length} {t(others.length === 1 ? 'admin.otherApplication' : 'admin.otherApplications')}
               </button>
               {showDone && <ul className="mt-2 space-y-2">{others.map(row)}</ul>}
             </div>
@@ -633,18 +664,15 @@ function ApplicationsSection() {
 }
 
 function RetentionNote() {
+  const { t } = useLanguage()
   return (
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 shrink-0 text-primary" size={20} />
         <div>
-          <h2 className="font-bold">Data retention (pilot policy)</h2>
+          <h2 className="font-bold">{t('admin.retentionTitle')}</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Student data is kept while the student is active. Students can delete
-            their own account at any time from their profile page. After
-            graduation, data should be deleted within one year. During the pilot
-            this is done by hand from Supabase; an automatic yearly clean-up is
-            planned.
+            {t('admin.retentionDescription')}
           </p>
         </div>
       </div>

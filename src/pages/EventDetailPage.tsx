@@ -13,9 +13,9 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { getEvent, listClubs, listMyRsvps, listRsvpCounts, setMyRsvp } from '../lib/api'
 import {
-  STATUS_LABEL,
   appUrl,
   mapLinks,
   eventImage,
@@ -31,13 +31,23 @@ import Breadcrumbs from '../components/Breadcrumbs'
 import { usePageMeta } from '../lib/usePageMeta'
 import { ErrorBox, Spinner, buttonSecondary, card, inputClass } from '../components/ui'
 
-const OPTIONS: { value: RsvpStatus; label: string; active: string }[] = [
-  { value: 'attending', label: "I'm going", active: 'border-green-600 bg-green-50 text-green-700' },
-  { value: 'maybe', label: 'Maybe', active: 'border-amber-500 bg-amber-50 text-amber-700' },
-  { value: 'not_attending', label: "Can't go", active: 'border-slate-500 bg-slate-100 text-slate-700' },
+const categoryTranslation: Record<string, TranslationKey> = {
+  Sports: 'category.sports',
+  Social: 'category.social',
+  Academic: 'category.academic',
+  Career: 'category.career',
+  Cultural: 'category.cultural',
+  Religious: 'category.religious',
+}
+
+const OPTIONS: { value: RsvpStatus; label: TranslationKey; active: string }[] = [
+  { value: 'attending', label: 'eventDetail.imGoing', active: 'border-green-600 bg-green-50 text-green-700' },
+  { value: 'maybe', label: 'eventDetail.maybeOption', active: 'border-amber-500 bg-amber-50 text-amber-700' },
+  { value: 'not_attending', label: 'eventDetail.cantGo', active: 'border-slate-500 bg-slate-100 text-slate-700' },
 ]
 
 export default function EventDetailPage() {
+  const { t } = useLanguage()
   const { id = '' } = useParams()
   const { session, isOrganizer } = useAuth()
   const userId = session!.user.id
@@ -70,13 +80,12 @@ export default function EventDetailPage() {
   if (!data?.event) {
     return (
       <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-surface p-8 text-center">
-        <h1 className="text-xl font-bold">Event not found</h1>
+        <h1 className="text-xl font-bold">{t('eventDetail.notFound')}</h1>
         <p className="text-sm text-slate-500">
-          It may have been removed, or it's only open to certain batches or
-          invited members.
+          {t('eventDetail.notFoundHint')}
         </p>
         <Link to="/events" className="inline-block text-sm font-semibold text-primary">
-          Back to events
+          {t('eventDetail.backToEvents')}
         </Link>
       </div>
     )
@@ -99,10 +108,10 @@ export default function EventDetailPage() {
       setData({ ...data, mine: saved, counts: freshCounts })
       setMessage(
         status === 'attending'
-          ? "You're in! The organizers have your details."
+          ? t('eventDetail.attendingMessage')
           : status === 'maybe'
-            ? 'Saved as maybe. You can change it any time before the deadline.'
-            : "Thanks for letting the organizers know.",
+            ? t('eventDetail.maybeMessage')
+            : t('eventDetail.notAttendingMessage'),
       )
     } catch (err) {
       setRsvpError(friendlyError(err))
@@ -137,17 +146,17 @@ export default function EventDetailPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <Breadcrumbs items={[['Events', '/events'], [event.title]]} />
+        <Breadcrumbs items={[[t('events.title'), '/events'], [event.title]]} />
 
         <div className="flex gap-2">
           <button onClick={share} className={buttonSecondary}>
             <Share2 size={16} />
-            {copied ? 'Link copied' : 'Share'}
+            {copied ? t('eventDetail.linkCopied') : t('eventDetail.share')}
           </button>
           {isOrganizer && (
             <Link to={`/organizer?event=${event.id}`} className={buttonSecondary}>
               <Pencil size={16} />
-              Manage
+              {t('eventDetail.manage')}
             </Link>
           )}
         </div>
@@ -156,7 +165,7 @@ export default function EventDetailPage() {
       <article className={`${card} overflow-hidden`}>
         <img
           src={eventImage(event)}
-          alt={`${event.title} event banner`}
+          alt={`${event.title} ${t('eventDetail.bannerAlt')}`}
           className="h-44 w-full object-cover sm:h-60"
           onError={(e) => {
             e.currentTarget.style.display = 'none'
@@ -170,14 +179,14 @@ export default function EventDetailPage() {
                 to={`/events?category=${encodeURIComponent(event.category)}`}
                 className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-primary hover:bg-red-100"
               >
-                {event.category}
+                {categoryTranslation[event.category] ? t(categoryTranslation[event.category]) : event.category}
               </Link>
               {data.club && (
                 <Link
                   to={`/clubs/${data.club.id}`}
                   className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                 >
-                  <Users size={12} /> Hosted by {data.club.name}
+                  <Users size={12} /> {t('eventDetail.hostedBy')} {data.club.name}
                 </Link>
               )}
             </div>
@@ -185,28 +194,28 @@ export default function EventDetailPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <InfoTile icon={<Clock size={18} />} label="When">
+            <InfoTile icon={<Clock size={18} />} label={t('eventDetail.when')}>
               {formatDate(event.event_date, 'long')}
               <br />
               {eventTimeRange(event)}
             </InfoTile>
-            <InfoTile icon={<MapPin size={18} />} label="Where">
+            <InfoTile icon={<MapPin size={18} />} label={t('eventDetail.where')}>
               {event.location}
               <span className="mt-1.5 flex gap-3 text-xs font-semibold">
                 <a href={mapLinks(event.location).naver} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                  Naver Map
+                  {t('eventDetail.naverMap')}
                 </a>
                 <a href={mapLinks(event.location).kakao} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                  Kakao Map
+                  {t('eventDetail.kakaoMap')}
                 </a>
               </span>
             </InfoTile>
-            <InfoTile icon={<Users size={18} />} label="Who's coming">
-              {counts.attending} going · {counts.maybe} maybe
+            <InfoTile icon={<Users size={18} />} label={t('eventDetail.whosComing')}>
+              {counts.attending} {t('eventDetail.going')} · {counts.maybe} {t('eventDetail.maybe')}
               {event.capacity !== null && (
                 <>
                   <br />
-                  {Math.max(event.capacity - counts.attending, 0)} of {event.capacity} places left
+                  {Math.max(event.capacity - counts.attending, 0)} / {event.capacity} {t('eventDetail.placesLeft')}
                 </>
               )}
             </InfoTile>
@@ -214,7 +223,7 @@ export default function EventDetailPage() {
 
           {event.description && (
             <section>
-              <h2 className="font-bold">About</h2>
+              <h2 className="font-bold">{t('eventDetail.about')}</h2>
               <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
                 {event.description}
               </p>
@@ -224,12 +233,12 @@ export default function EventDetailPage() {
           {(event.bring || event.notes) && (
             <div className="grid gap-3 sm:grid-cols-2">
               {event.bring && (
-                <InfoTile icon={<Backpack size={18} />} label="What to bring">
+                <InfoTile icon={<Backpack size={18} />} label={t('eventDetail.whatToBring')}>
                   {event.bring}
                 </InfoTile>
               )}
               {event.notes && (
-                <InfoTile icon={<StickyNote size={18} />} label="Notes">
+                <InfoTile icon={<StickyNote size={18} />} label={t('eventDetail.notes')}>
                   {event.notes}
                 </InfoTile>
               )}
@@ -241,17 +250,17 @@ export default function EventDetailPage() {
       <section className={`${card} p-5 sm:p-7`} aria-labelledby="rsvp-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="rsvp-heading" className="text-lg font-bold">
-            {mine ? `Your answer: ${STATUS_LABEL[mine.status]}` : 'Are you coming?'}
+            {mine ? `${t('eventDetail.yourAnswer')} ${t(mine.status === 'attending' ? 'eventDetail.imGoing' : mine.status === 'maybe' ? 'eventDetail.maybeOption' : 'eventDetail.cantGo')}` : t('eventDetail.areYouComing')}
           </h2>
           <p className="flex items-center gap-1.5 text-xs text-slate-500">
             <CalendarClock size={14} />
-            RSVP by {formatDate(rsvpDeadline(event))}
+            {t('eventDetail.rsvpBy')} {formatDate(rsvpDeadline(event))}
           </p>
         </div>
 
         {!open ? (
           <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
-            RSVPs for this event are closed.
+            {t('eventDetail.rsvpsClosed')}
           </div>
         ) : (
           <>
@@ -270,7 +279,7 @@ export default function EventDetailPage() {
                       selected ? option.active : 'border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    {saving === option.value ? 'Saving…' : blocked ? 'Full' : option.label}
+                    {saving === option.value ? t('eventDetail.saving') : blocked ? t('eventDetail.full') : t(option.label)}
                   </button>
                 )
               })}
@@ -282,8 +291,8 @@ export default function EventDetailPage() {
                   value={commentValue}
                   onChange={(e) => setComment(e.target.value)}
                   maxLength={500}
-                  placeholder="Add a note for the organizers (optional)"
-                  aria-label="Note for the organizers"
+                  placeholder={t('eventDetail.notePlaceholder')}
+                  aria-label={t('eventDetail.noteLabel')}
                   className={`${inputClass} mt-0`}
                 />
                 <button
@@ -291,7 +300,7 @@ export default function EventDetailPage() {
                   disabled={saving !== null || commentValue === mine.comment}
                   className={buttonSecondary}
                 >
-                  Save
+                  {t('eventDetail.save')}
                 </button>
               </div>
             )}
@@ -308,7 +317,7 @@ export default function EventDetailPage() {
           )}
           {mine?.checked_in_at && (
             <p className="text-sm font-semibold text-green-700">
-              ✓ Checked in at the event
+              ✓ {t('eventDetail.checkedIn')}
             </p>
           )}
         </div>

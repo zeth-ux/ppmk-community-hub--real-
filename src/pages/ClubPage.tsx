@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   createClubPost,
   decideClubRequest,
@@ -42,7 +43,6 @@ import {
 } from '../lib/api'
 import { clubGradient, friendlyError, isPast, timeAgo } from '../lib/format'
 import {
-  CLUB_ROLE_LABEL,
   type Club,
   type ClubMemberRow,
   type ClubPost,
@@ -69,10 +69,10 @@ import {
 
 type Tab = 'activity' | 'about' | 'events' | 'members' | 'manage'
 
-const KIND_LABEL: Record<ClubPostKind, string> = {
-  update: 'Update',
-  activity: 'Activity',
-  meeting: 'Meeting',
+const KIND_LABEL: Record<ClubPostKind, TranslationKey> = {
+  update: 'club.update',
+  activity: 'club.activityKind',
+  meeting: 'club.meeting',
 }
 
 const KIND_STYLE: Record<ClubPostKind, string> = {
@@ -82,6 +82,7 @@ const KIND_STYLE: Record<ClubPostKind, string> = {
 }
 
 export default function ClubPage() {
+  const { t } = useLanguage()
   const { id = '' } = useParams()
   const { session, isAdmin, isOrganizer } = useAuth()
   const userId = session!.user.id
@@ -117,8 +118,8 @@ export default function ClubPage() {
   if (error) return <ErrorBox>{error}</ErrorBox>
   if (!data?.club) {
     return (
-      <EmptyState title="Club not found">
-        <Link to="/clubs" className="font-semibold text-primary">Back to clubs</Link>
+      <EmptyState title={t('club.notFound')}>
+        <Link to="/clubs" className="font-semibold text-primary">{t('club.backToClubs')}</Link>
       </EmptyState>
     )
   }
@@ -139,18 +140,18 @@ export default function ClubPage() {
   const leaders = active.filter((m) => m.role === 'president' || m.role === 'vice_president')
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: 'activity', label: 'Activity' },
-    { id: 'about', label: 'About' },
-    { id: 'events', label: 'Events', badge: events.length || undefined },
-    { id: 'members', label: 'Members', badge: active.length },
-    ...(isLeader ? [{ id: 'manage' as Tab, label: 'Manage', badge: pending.length || undefined }] : []),
+    { id: 'activity', label: t('club.activity') },
+    { id: 'about', label: t('club.about') },
+    { id: 'events', label: t('club.events'), badge: events.length || undefined },
+    { id: 'members', label: t('club.members'), badge: active.length },
+    ...(isLeader ? [{ id: 'manage' as Tab, label: t('club.manage'), badge: pending.length || undefined }] : []),
   ]
   const tab = (tabs.find((t) => t.id === params.get('tab'))?.id ?? 'activity') as Tab
   const setTab = (t: Tab) => setParams(t === 'activity' ? {} : { tab: t }, { replace: true })
 
   return (
     <div className="space-y-5">
-      <Breadcrumbs items={[['Clubs', '/clubs'], [club.name]]} />
+      <Breadcrumbs items={[[t('clubs.title'), '/clubs'], [club.name]]} />
 
       {/* ---------- Header ---------- */}
       <section className={`${card} overflow-hidden`}>
@@ -177,23 +178,23 @@ export default function ClubPage() {
           {club.tagline && <p className="mt-4 text-slate-700">{club.tagline}</p>}
 
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-            <Chip icon={<Users size={14} />}>{active.length} members</Chip>
+            <Chip icon={<Users size={14} />}>{active.length} {t('club.memberCount')}</Chip>
             {club.meeting_info && <Chip icon={<CalendarClock size={14} />}>{club.meeting_info}</Chip>}
             {club.instagram && (
               <a href={`https://instagram.com/${club.instagram.replace(/^@/, '')}`} target="_blank" rel="noreferrer">
                 <Chip icon={<AtSign size={14} />}>{club.instagram.replace(/^@/, '')}</Chip>
               </a>
             )}
-            {myRole && <Chip icon={<Crown size={14} />} tone="green">You: {CLUB_ROLE_LABEL[myRole]}</Chip>}
+            {myRole && <Chip icon={<Crown size={14} />} tone="green">{t('club.you')} {t(({ president: 'clubRole.president', vice_president: 'clubRole.vicePresident', committee: 'clubRole.committee', member: 'clubRole.member' } as const)[myRole])}</Chip>}
           </div>
 
           {isLeader && isOrganizer && (
             <div className="mt-4 flex flex-wrap gap-2">
               <Link to={`/organizer?new=1&club=${club.id}`} className={buttonSecondary}>
-                <CalendarPlus size={16} /> Create club event
+                <CalendarPlus size={16} /> {t('club.createEvent')}
               </Link>
               <button onClick={() => setTab('manage')} className={buttonSecondary}>
-                <Settings size={16} /> Manage club
+                <Settings size={16} /> {t('club.manageClub')}
                 {pending.length > 0 && (
                   <span className="rounded-full bg-amber-500 px-1.5 text-xs text-white">{pending.length}</span>
                 )}
@@ -240,15 +241,15 @@ export default function ClubPage() {
       {tab === 'about' && (
         <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
           <section className={`${card} p-5 sm:p-6`}>
-            <h2 className="font-bold">About the club</h2>
-            <p className="mt-3 whitespace-pre-line leading-7 text-slate-700">{club.about || club.description || 'No description yet.'}</p>
+            <h2 className="font-bold">{t('club.aboutClub')}</h2>
+            <p className="mt-3 whitespace-pre-line leading-7 text-slate-700">{club.about || club.description || t('club.noDescription')}</p>
             <ClubGallery clubId={club.id} photos={gallery} isLeader={isLeader} userId={userId} onChange={reload} />
           </section>
           <section className={`${card} h-fit space-y-4 p-5 sm:p-6`}>
             <div>
-              <h2 className="font-bold">Led by</h2>
+              <h2 className="font-bold">{t('club.ledBy')}</h2>
               <ul className="mt-2 space-y-2">
-                {leaders.length === 0 && <li className="text-sm text-slate-500">{club.leader_name ?? 'Not set yet'}</li>}
+                {leaders.length === 0 && <li className="text-sm text-slate-500">{club.leader_name ?? t('club.notSet')}</li>}
                 {leaders.map((m) => (
                   <li key={m.user_id} className="flex items-center justify-between text-sm">
                     <span className="font-semibold">@{m.username ?? 'member'}</span>
@@ -259,19 +260,19 @@ export default function ClubPage() {
             </div>
             {club.meeting_info && (
               <div>
-                <h2 className="font-bold">Regular meeting</h2>
+                <h2 className="font-bold">{t('club.regularMeeting')}</h2>
                 <p className="mt-1 text-sm text-slate-600">{club.meeting_info}</p>
               </div>
             )}
             {club.leader_contact && (
               <div>
-                <h2 className="font-bold">Contact</h2>
+                <h2 className="font-bold">{t('club.contact')}</h2>
                 <p className="mt-1 flex items-center gap-2 text-sm text-slate-600"><MessageCircle size={15} /> {club.leader_contact}</p>
               </div>
             )}
             {club.join_url && (
               <a href={club.join_url} target="_blank" rel="noreferrer" className={`${buttonSecondary} w-full`}>
-                Club group chat <ExternalLink size={15} />
+                {t('club.groupChat')} <ExternalLink size={15} />
               </a>
             )}
           </section>
@@ -282,11 +283,11 @@ export default function ClubPage() {
         <section className="space-y-3">
           {isLeader && isOrganizer && (
             <Link to={`/organizer?new=1&club=${club.id}`} className={buttonPrimary}>
-              <CalendarPlus size={16} /> Create an event for {club.name}
+              <CalendarPlus size={16} /> {t('club.createEventFor')} {club.name}
             </Link>
           )}
           {events.length === 0 ? (
-            <EmptyState title="No upcoming club events" />
+            <EmptyState title={t('club.noUpcomingEvents')} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((e) => (
@@ -334,13 +335,20 @@ function Chip({ icon, children, tone = 'slate' }: { icon: ReactNode; children: R
 }
 
 function RoleBadge({ role }: { role: ClubRole }) {
+  const { t } = useLanguage()
+  const roleKeys: Record<ClubRole, TranslationKey> = {
+    president: 'clubRole.president',
+    vice_president: 'clubRole.vicePresident',
+    committee: 'clubRole.committee',
+    member: 'clubRole.member',
+  }
   const style: Record<ClubRole, string> = {
     president: 'bg-primary text-white',
     vice_president: 'bg-red-50 text-primary',
     committee: 'bg-sky-50 text-sky-700',
     member: 'bg-slate-100 text-slate-600',
   }
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${style[role]}`}>{CLUB_ROLE_LABEL[role]}</span>
+  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${style[role]}`}>{t(roleKeys[role])}</span>
 }
 
 // ---------------------------------------------------------------------
@@ -354,6 +362,7 @@ function JoinButton({
   me: { status: 'pending' | 'active'; role: ClubRole } | null
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const [asking, setAsking] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -378,15 +387,15 @@ function JoinButton({
     return (
       <div className="flex flex-col items-start gap-1 sm:items-end">
         <span className="inline-flex items-center gap-1.5 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-bold text-green-700">
-          <Check size={16} /> Member
+          <Check size={16} /> {t('club.member')}
         </span>
         {me.role !== 'president' && (
           <button
             disabled={busy}
-            onClick={() => window.confirm(`Leave ${club.name}?`) && void run(() => leaveClub(club.id))}
+            onClick={() => window.confirm(t('club.leaveConfirm').replace('{name}', club.name)) && void run(() => leaveClub(club.id))}
             className="text-xs font-semibold text-slate-400 hover:text-red-600"
           >
-            Leave club
+            {t('club.leave')}
           </button>
         )}
         {error && <p className="text-xs text-red-600">{error}</p>}
@@ -397,9 +406,9 @@ function JoinButton({
   if (me?.status === 'pending') {
     return (
       <div className="flex flex-col items-start gap-1 sm:items-end">
-        <span className="rounded-xl bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700">Request sent</span>
+        <span className="rounded-xl bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700">{t('club.requestSent')}</span>
         <button disabled={busy} onClick={() => void run(() => leaveClub(club.id))} className="text-xs font-semibold text-slate-400 hover:text-red-600">
-          Cancel request
+          {t('club.cancelRequest')}
         </button>
       </div>
     )
@@ -409,7 +418,7 @@ function JoinButton({
     return (
       <div className="flex flex-col items-start gap-1 sm:items-end">
         <button disabled={busy} onClick={() => void run(() => joinClub(club.id))} className={buttonPrimary}>
-          {busy ? 'Joining…' : 'Join club'}
+          {busy ? t('club.joining') : t('club.join')}
         </button>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
@@ -419,7 +428,7 @@ function JoinButton({
   if (!asking) {
     return (
       <button onClick={() => setAsking(true)} className={buttonPrimary}>
-        Ask to join
+        {t('club.askToJoin')}
       </button>
     )
   }
@@ -433,13 +442,13 @@ function JoinButton({
       className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 sm:max-w-sm"
     >
       <label className="text-sm font-medium">
-        Message to the club leaders <span className="font-normal text-slate-400">(optional)</span>
+        {t('club.messageLeaders')} <span className="font-normal text-slate-400">{t('clubApply.optional')}</span>
         <textarea
           rows={2}
           maxLength={500}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Hi! I'd love to join because…"
+          placeholder={t('club.joinMessagePlaceholder')}
           className={inputClass}
           autoFocus
         />
@@ -447,10 +456,10 @@ function JoinButton({
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <div className="mt-2 flex gap-2">
         <button type="submit" disabled={busy} className={`${buttonPrimary} py-2.5`}>
-          {busy ? 'Sending…' : 'Send request'}
+          {busy ? t('club.sending') : t('club.sendRequest')}
         </button>
         <button type="button" onClick={() => setAsking(false)} className={buttonSecondary}>
-          Cancel
+          {t('clubApply.cancel')}
         </button>
       </div>
     </form>
@@ -488,6 +497,7 @@ function ActivityTab({
   photos: Photo[]
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const [composing, setComposing] = useState(false)
   const [form, setForm] = useState<ClubPostInput>(EMPTY_POST)
   const [files, setFiles] = useState<File[]>([])
@@ -497,11 +507,11 @@ function ActivityTab({
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (form.title.trim().length < 3) {
-      setError('Give the post a title (at least 3 characters).')
+      setError(t('club.postTitleHint'))
       return
     }
     if (form.kind === 'meeting' && !form.meeting_at) {
-      setError('Pick the meeting date and time.')
+      setError(t('club.meetingDateHint'))
       return
     }
     setBusy(true)
@@ -519,7 +529,7 @@ function ActivityTab({
         try {
           await uploadPhotos({ club_post_id: created.id }, files, userId)
         } catch (err) {
-          setError(`Posted, but the photos didn't upload: ${friendlyError(err)}`)
+          setError(t('club.photoUploadProblem').replace('{error}', friendlyError(err)))
         }
       }
       setFiles([])
@@ -534,7 +544,7 @@ function ActivityTab({
   }
 
   async function remove(post: ClubPost) {
-    if (!window.confirm('Delete this post?')) return
+    if (!window.confirm(t('club.deletePostConfirm'))) return
     try {
       await deleteClubPost(post.id)
       await onChange()
@@ -558,14 +568,14 @@ function ActivityTab({
                     form.kind === k ? 'bg-primary text-white' : 'border border-slate-200 text-slate-600'
                   }`}
                 >
-                  {k === 'meeting' ? 'Regular meeting' : KIND_LABEL[k]}
+                  {k === 'meeting' ? t('club.regularMeetingKind') : t(KIND_LABEL[k])}
                 </button>
               ))}
             </div>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder={form.kind === 'meeting' ? 'e.g. Weekly training' : form.kind === 'activity' ? 'What did the club do?' : 'Title'}
+              placeholder={form.kind === 'meeting' ? t('club.meetingTitlePlaceholder') : form.kind === 'activity' ? t('club.activityTitlePlaceholder') : t('club.title')}
               maxLength={120}
               className={inputClass}
               autoFocus
@@ -574,14 +584,14 @@ function ActivityTab({
               rows={3}
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
-              placeholder="Details (optional)"
+              placeholder={t('club.postDetails')}
               maxLength={4000}
               className={inputClass}
             />
             {form.kind === 'meeting' && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-medium">
-                  Date &amp; time
+                  {t('club.dateTime')}
                   <input
                     type="datetime-local"
                     value={form.meeting_at ?? ''}
@@ -590,11 +600,11 @@ function ActivityTab({
                   />
                 </label>
                 <label className="text-sm font-medium">
-                  Where
+                  {t('club.where')}
                   <input
                     value={form.location}
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    placeholder="e.g. ERICA Gym"
+                    placeholder={t('club.mapGymPlaceholder')}
                     className={inputClass}
                   />
                 </label>
@@ -603,60 +613,60 @@ function ActivityTab({
             <PhotoPicker files={files} onChange={setFiles} />
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <label className="flex items-center gap-2">
-                <span className="font-medium">Who can see it?</span>
+                <span className="font-medium">{t('club.whoCanSee')}</span>
                 <select
                   value={form.visibility}
                   onChange={(e) => setForm({ ...form, visibility: e.target.value as ClubPostInput['visibility'] })}
                   className="rounded-lg border border-slate-200 bg-surface px-2 py-1.5"
                 >
-                  <option value="everyone">Everyone</option>
-                  <option value="members">Club members only</option>
+                  <option value="everyone">{t('club.everyone')}</option>
+                  <option value="members">{t('club.clubMembersOnly')}</option>
                 </select>
               </label>
               {isLeader && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="accent-red-700" />
-                  Pin to top
+                  {t('club.pinToTop')}
                 </label>
               )}
             </div>
             <ErrorBox>{error}</ErrorBox>
             <div className="flex gap-2">
-              <button type="submit" disabled={busy} className={buttonPrimary}>{busy ? 'Posting…' : 'Post'}</button>
-              <button type="button" onClick={() => setComposing(false)} className={buttonSecondary}>Cancel</button>
+              <button type="submit" disabled={busy} className={buttonPrimary}>{busy ? t('club.posting') : t('club.post')}</button>
+              <button type="button" onClick={() => setComposing(false)} className={buttonSecondary}>{t('clubApply.cancel')}</button>
             </div>
           </form>
         ) : (
           <button onClick={() => setComposing(true)} className={`${card} flex w-full items-center gap-3 p-4 text-left text-sm text-slate-500 hover:border-primary`}>
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 font-bold text-primary">+</span>
-            Share an update, activity or regular meeting…
+            {t('club.shareUpdate')}
           </button>
         ))}
 
       {!canPost && isMember && (
         <p className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500">
-          Only the president, vice president and committee post here. Your leaders can change this in the club settings.
+          {t('club.postingRules')}
         </p>
       )}
 
       {!isMember && club.posts_visibility === 'members' ? (
-        <EmptyState title="Posts are for members only">
-          <span className="inline-flex items-center gap-1"><Lock size={14} /> Join the club to see their activity.</span>
+        <EmptyState title={t('club.postsMembersOnly')}>
+          <span className="inline-flex items-center gap-1"><Lock size={14} /> {t('club.joinToSee')}</span>
         </EmptyState>
       ) : posts.length === 0 ? (
-        <EmptyState title="No posts yet">The club hasn't shared anything yet.</EmptyState>
+        <EmptyState title={t('club.noPosts')}>{t('club.clubNothingShared')}</EmptyState>
       ) : (
         posts.map((post) => (
           <article key={post.id} className={`${card} p-5`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className={`rounded-full px-2.5 py-0.5 font-semibold ${KIND_STYLE[post.kind]}`}>{KIND_LABEL[post.kind]}</span>
-                {post.pinned && <span className="inline-flex items-center gap-1 font-semibold text-primary"><Pin size={12} /> Pinned</span>}
-                {post.visibility === 'members' && <span className="inline-flex items-center gap-1 text-slate-500"><Lock size={12} /> Members</span>}
+                <span className={`rounded-full px-2.5 py-0.5 font-semibold ${KIND_STYLE[post.kind]}`}>{t(KIND_LABEL[post.kind])}</span>
+                {post.pinned && <span className="inline-flex items-center gap-1 font-semibold text-primary"><Pin size={12} /> {t('club.pinned')}</span>}
+                {post.visibility === 'members' && <span className="inline-flex items-center gap-1 text-slate-500"><Lock size={12} /> {t('club.membersOnly')}</span>}
                 <span className="text-slate-400">@{post.author_username ?? 'member'} · {timeAgo(post.created_at)}</span>
               </div>
               {(isLeader || post.author_id === userId) && (
-                <button onClick={() => void remove(post)} aria-label="Delete post" className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                <button onClick={() => void remove(post)} aria-label={t('club.deletePost')} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
                   <Trash2 size={15} />
                 </button>
               )}
@@ -709,6 +719,7 @@ function MembersTab({
   userId: string
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const [error, setError] = useState('')
 
   async function act(fn: () => Promise<unknown>) {
@@ -725,10 +736,10 @@ function MembersTab({
 
   return (
     <section className={`${card} mx-auto max-w-3xl p-5 sm:p-6`}>
-      <h2 className="font-bold">Members</h2>
+      <h2 className="font-bold">{t('club.members')}</h2>
       {isLeader && (
         <p className="mt-1 text-sm text-slate-500">
-          Change roles here. Presidents and vice presidents can manage the club and create events; committee members can post.
+          {t('club.changeRoles')}
         </p>
       )}
       <div className="mt-3"><ErrorBox>{error}</ErrorBox></div>
@@ -742,8 +753,8 @@ function MembersTab({
                   {(m.username ?? '?').charAt(0).toUpperCase()}
                 </span>
                 <div>
-                  <p className="font-semibold">@{m.username ?? 'member'}{m.user_id === userId && <span className="ml-1 text-xs font-normal text-slate-400">(you)</span>}</p>
-                  {m.batch && <p className="text-xs text-slate-500">Batch {m.batch}</p>}
+                  <p className="font-semibold">@{m.username ?? 'member'}{m.user_id === userId && <span className="ml-1 text-xs font-normal text-slate-400">{t('admin.you')}</span>}</p>
+                  {m.batch && <p className="text-xs text-slate-500">{t('club.batch')} {m.batch}</p>}
                 </div>
               </div>
               {editable ? (
@@ -751,16 +762,16 @@ function MembersTab({
                   <select
                     value={m.role}
                     onChange={(e) => void act(() => setClubMemberRole(clubId, m.user_id, e.target.value as ClubRole))}
-                    aria-label={`Role for ${m.username}`}
+                    aria-label={t('club.roleFor').replace('{name}', m.username ?? '')}
                     className="rounded-lg border border-slate-200 bg-surface px-2 py-1.5 text-sm"
                   >
                     {(roles.includes(m.role) ? roles : [m.role, ...roles]).map((r) => (
-                      <option key={r} value={r}>{CLUB_ROLE_LABEL[r]}</option>
+                      <option key={r} value={r}>{t(({ president: 'clubRole.president', vice_president: 'clubRole.vicePresident', committee: 'clubRole.committee', member: 'clubRole.member' } as const)[r])}</option>
                     ))}
                   </select>
                   <button
-                    onClick={() => window.confirm(`Remove @${m.username} from the club?`) && void act(() => removeClubMember(clubId, m.user_id))}
-                    aria-label={`Remove ${m.username}`}
+                    onClick={() => window.confirm(t('club.removeMemberConfirm').replace('{name}', m.username ?? '')) && void act(() => removeClubMember(clubId, m.user_id))}
+                    aria-label={t('club.removeMember').replace('{name}', m.username ?? '')}
                     className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
                   >
                     <UserMinus size={16} />
@@ -790,6 +801,7 @@ function ManageTab({
   onClubSaved: (club: Club) => void
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const [form, setForm] = useState({
     tagline: club.tagline,
     about: club.about || club.description,
@@ -846,9 +858,9 @@ function ManageTab({
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_1.3fr]">
       <section className={`${card} h-fit p-5 sm:p-6`}>
-        <h2 className="font-bold">Join requests</h2>
+        <h2 className="font-bold">{t('club.joinRequests')}</h2>
         {pending.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No one waiting right now.</p>
+          <p className="mt-2 text-sm text-slate-500">{t('club.noOneWaiting')}</p>
         ) : (
           <ul className="mt-3 space-y-3">
             {pending.map((m) => (
@@ -857,10 +869,10 @@ function ManageTab({
                 {m.message && <p className="mt-1 rounded-lg bg-slate-50 p-2 text-sm text-slate-600">“{m.message}”</p>}
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => void decide(m.user_id, true)} className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-bold text-white">
-                    <Check size={15} /> Accept
+                    <Check size={15} /> {t('club.accept')}
                   </button>
                   <button onClick={() => void decide(m.user_id, false)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600">
-                    <X size={15} /> Decline
+                    <X size={15} /> {t('club.decline')}
                   </button>
                 </div>
               </li>
@@ -871,20 +883,20 @@ function ManageTab({
 
       <form onSubmit={save} className={`${card} space-y-5 p-5 sm:p-6`}>
         <div>
-          <h2 className="font-bold">Club page</h2>
-          <p className="text-sm text-slate-500">What students see when they open your club.</p>
+          <h2 className="font-bold">{t('club.page')}</h2>
+          <p className="text-sm text-slate-500">{t('club.pageHint')}</p>
         </div>
         <label className="block text-sm font-medium">
-          Tagline
-          <input value={form.tagline} maxLength={140} onChange={(e) => set('tagline', e.target.value)} placeholder="One line about the club" className={inputClass} />
+          {t('clubApply.tagline')}
+          <input value={form.tagline} maxLength={140} onChange={(e) => set('tagline', e.target.value)} placeholder={t('club.oneLineAbout')} className={inputClass} />
         </label>
         <label className="block text-sm font-medium">
-          About
+          {t('club.about')}
           <textarea rows={5} value={form.about} maxLength={5000} onChange={(e) => set('about', e.target.value)} className={inputClass} />
         </label>
         <label className="block text-sm font-medium">
-          Regular meeting
-          <input value={form.meeting_info} maxLength={300} onChange={(e) => set('meeting_info', e.target.value)} placeholder="e.g. Every Wednesday, 7–9pm · ERICA Gym" className={inputClass} />
+          {t('club.regularMeeting')}
+          <input value={form.meeting_info} maxLength={300} onChange={(e) => set('meeting_info', e.target.value)} placeholder={t('club.meetingInfoPlaceholder')} className={inputClass} />
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-medium">
@@ -892,50 +904,50 @@ function ManageTab({
             <input value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="club.handle" className={inputClass} />
           </label>
           <label className="block text-sm font-medium">
-            Contact (Kakao ID, email)
+            {t('admin.leaderContact')}
             <input value={form.leader_contact} onChange={(e) => set('leader_contact', e.target.value)} className={inputClass} />
           </label>
         </div>
         <label className="block text-sm font-medium">
-          Group chat link
-          <input type="url" value={form.join_url} onChange={(e) => set('join_url', e.target.value)} placeholder="https://open.kakao.com/…" className={inputClass} />
+          {t('club.groupChatLink')}
+          <input type="url" value={form.join_url} onChange={(e) => set('join_url', e.target.value)} placeholder={t('club.groupChatPlaceholder')} className={inputClass} />
         </label>
 
         <div className="space-y-4 rounded-xl bg-slate-50 p-4">
-          <h3 className="flex items-center gap-2 font-bold"><Settings size={16} /> Settings</h3>
+          <h3 className="flex items-center gap-2 font-bold"><Settings size={16} /> {t('club.settings')}</h3>
           <Setting
-            label="Who can join?"
+            label={t('club.whoCanJoin')}
             value={form.join_policy}
             onChange={(v) => set('join_policy', v as Club['join_policy'])}
             options={[
-              ['approval', 'Leaders approve each request', <Lock key="l" size={15} />],
-              ['open', 'Anyone can join instantly', <Globe key="g" size={15} />],
+              ['approval', t('club.leadersApprove'), <Lock key="l" size={15} />],
+              ['open', t('club.anyoneCanJoin'), <Globe key="g" size={15} />],
             ]}
           />
           <Setting
-            label="Who can post activities and meetings?"
+            label={t('club.whoCanPost')}
             value={form.who_can_post}
             onChange={(v) => set('who_can_post', v as Club['who_can_post'])}
             options={[
-              ['leaders', 'President, VP & committee only', <Crown key="c" size={15} />],
-              ['members', 'All club members', <Users key="u" size={15} />],
+              ['leaders', t('club.leadersOnly'), <Crown key="c" size={15} />],
+              ['members', t('club.allMembers'), <Users key="u" size={15} />],
             ]}
           />
           <Setting
-            label="Who can see the club's posts?"
+            label={t('club.whoCanSeePosts')}
             value={form.posts_visibility}
             onChange={(v) => set('posts_visibility', v as Club['posts_visibility'])}
             options={[
-              ['everyone', 'Everyone in the hub', <Globe key="g" size={15} />],
-              ['members', 'Club members only', <Lock key="l" size={15} />],
+              ['everyone', t('club.everyoneInHub'), <Globe key="g" size={15} />],
+              ['members', t('club.clubMembersOnly'), <Lock key="l" size={15} />],
             ]}
           />
         </div>
 
         <ErrorBox>{error}</ErrorBox>
         <div className="flex items-center gap-3">
-          <button type="submit" disabled={saving} className={buttonPrimary}>{saving ? 'Saving…' : 'Save changes'}</button>
-          {saved && <span className="text-sm font-semibold text-green-700">Saved ✓</span>}
+          <button type="submit" disabled={saving} className={buttonPrimary}>{saving ? t('club.saving') : t('profile.saveChanges')}</button>
+          {saved && <span className="text-sm font-semibold text-green-700">{t('club.saved')}</span>}
         </div>
       </form>
     </div>
@@ -990,6 +1002,7 @@ function ClubGallery({
   userId: string
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const [files, setFiles] = useState<File[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -999,15 +1012,15 @@ function ClubGallery({
   return (
     <div className="mt-6 border-t border-slate-100 pt-5">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-bold">Club photos</h3>
+        <h3 className="font-bold">{t('club.clubPhotos')}</h3>
         {isLeader && files === null && (
           <button onClick={() => setFiles([])} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
-            <Camera size={15} /> Add photos
+            <Camera size={15} /> {t('club.addPhotos')}
           </button>
         )}
       </div>
       {isLeader && photos.length === 0 && files === null && (
-        <p className="mt-1 text-sm text-slate-500">Add a few photos. The first approved one becomes your club's cover.</p>
+        <p className="mt-1 text-sm text-slate-500">{t('club.coverHint')}</p>
       )}
       {files !== null && (
         <div className="mt-3 space-y-3 rounded-xl border border-slate-200 p-3">
@@ -1031,9 +1044,9 @@ function ClubGallery({
               }}
               className={`${buttonPrimary} px-4 py-2`}
             >
-              {busy ? 'Uploading…' : 'Upload for review'}
+              {busy ? t('club.uploading') : t('club.uploadForReview')}
             </button>
-            <button onClick={() => setFiles(null)} className={buttonSecondary}>Cancel</button>
+            <button onClick={() => setFiles(null)} className={buttonSecondary}>{t('clubApply.cancel')}</button>
           </div>
         </div>
       )}

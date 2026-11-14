@@ -2,18 +2,27 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { CalendarPlus, Plus, Settings } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 
 import { listClubs, listEvents, listMyClubMemberships, listRsvpCounts } from '../lib/api'
 import { formatDate, isPast } from '../lib/format'
-import { CLUB_ROLE_LABEL, type HubEvent } from '../lib/types'
+import type { ClubRole, HubEvent } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import EventForm from '../components/organizer/EventForm'
 import EventManagePanel from '../components/organizer/EventManagePanel'
 import { ErrorBox, PageHeader, Spinner, buttonPrimary, card } from '../components/ui'
 
+const roleTranslation: Record<ClubRole, TranslationKey> = {
+  president: 'clubRole.president',
+  vice_president: 'clubRole.vicePresident',
+  committee: 'clubRole.committee',
+  member: 'clubRole.member',
+}
+
 export default function OrganizerPage() {
-  usePageMeta('Organizer tools')
+  const { t } = useLanguage()
+  usePageMeta(t('organizer.title'))
   const [params, setParams] = useSearchParams()
   const selectedId = params.get('event')
   const mode = params.get('new') === '1' ? 'new' : params.get('edit') === '1' ? 'edit' : 'view'
@@ -41,13 +50,13 @@ export default function OrganizerPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Organizer"
-        title="Manage events"
-        description="Create an event, share one link, and watch RSVPs come in. Export the list when you need it."
+        eyebrow={t('organizer.title')}
+        title={t('organizer.manageEvents')}
+        description={t('organizer.description')}
         action={
           <button onClick={() => go({ new: '1' })} className={buttonPrimary}>
             <Plus size={16} />
-            New event
+            {t('organizer.newEvent')}
           </button>
         }
       />
@@ -61,11 +70,11 @@ export default function OrganizerPage() {
           {loading ? (
             <Spinner />
           ) : events.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">No events yet. Create the first one!</p>
+            <p className="p-4 text-sm text-slate-500">{t('organizer.noEvents')}</p>
           ) : (
             <>
               <EventGroup
-                title="Upcoming"
+                title={t('organizer.upcoming')}
                 events={upcoming}
                 selectedId={selectedId}
                 counts={data?.counts}
@@ -73,7 +82,7 @@ export default function OrganizerPage() {
               />
               {past.length > 0 && (
                 <EventGroup
-                  title="Past"
+                  title={t('organizer.past')}
                   events={past}
                   selectedId={selectedId}
                   counts={data?.counts}
@@ -100,7 +109,7 @@ export default function OrganizerPage() {
                 onClick={() => go({})}
                 className="mb-3 text-sm font-semibold text-slate-500 hover:text-primary lg:hidden"
               >
-                ← All my events
+                {t('organizer.allEvents')}
               </button>
               <EventManagePanel
                 key={selected.id}
@@ -116,7 +125,7 @@ export default function OrganizerPage() {
           ) : (
             !loading && (
               <div className="hidden rounded-2xl border border-dashed border-slate-300 bg-surface p-10 text-center text-sm text-slate-500 lg:block">
-                Pick an event on the left to see responses, or create a new one.
+                {t('organizer.pickEvent')}
               </div>
             )
           )}
@@ -139,12 +148,13 @@ function EventGroup({
   counts?: Record<string, { attending: number }>
   onSelect: (id: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <div className="mb-2">
       <p className="px-3 pb-1 pt-2 text-xs font-bold text-slate-400">
         {title}
       </p>
-      {events.length === 0 && <p className="px-3 py-2 text-sm text-slate-400">None</p>}
+      {events.length === 0 && <p className="px-3 py-2 text-sm text-slate-400">{t('eventDetail.none')}</p>}
       {events.map((event) => (
         <button
           key={event.id}
@@ -157,7 +167,7 @@ function EventGroup({
             {event.title}
           </p>
           <p className="text-xs text-slate-500">
-            {formatDate(event.event_date)} · {counts?.[event.id]?.attending ?? 0} going
+            {formatDate(event.event_date)} · {counts?.[event.id]?.attending ?? 0} {t('organizer.going')}
           </p>
         </button>
       ))}
@@ -167,6 +177,7 @@ function EventGroup({
 
 /** Club leaders: quick links to run their club from here. */
 function MyLedClubs() {
+  const { t } = useLanguage()
   const { session } = useAuth()
   const userId = session!.user.id
   const { data } = useLoader(async () => {
@@ -183,14 +194,14 @@ function MyLedClubs() {
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {data.map((m) => (
         <div key={m.club_id} className={`${card} p-4`}>
-          <p className="text-xs font-semibold text-primary">You lead · {CLUB_ROLE_LABEL[m.role]}</p>
+          <p className="text-xs font-semibold text-primary">{t('organizer.youLead')} · {t(roleTranslation[m.role])}</p>
           <Link to={`/clubs/${m.club_id}`} className="mt-0.5 block font-bold hover:text-primary">{m.club!.name}</Link>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <Link to={`/organizer?new=1&club=${m.club_id}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-primary hover:bg-red-100">
-              <CalendarPlus size={15} /> Club event
+              <CalendarPlus size={15} /> {t('organizer.clubEvent')}
             </Link>
             <Link to={`/clubs/${m.club_id}?tab=manage`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200">
-              <Settings size={15} /> Manage
+              <Settings size={15} /> {t('organizer.manage')}
             </Link>
           </div>
         </div>
