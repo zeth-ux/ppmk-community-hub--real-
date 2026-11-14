@@ -15,7 +15,8 @@
     "test:db": "python3 supabase/tests/test_rls.py",
     "ai:eval": "tsx --env-file=.env.local scripts/ai-eval/run.ts",
     "test:reminders": "tsx --test tests/reminders.test.ts",
-    "reminders:secret": "tsx scripts/reminder-secret.ts"
+    "reminders:secret": "tsx scripts/reminder-secret.ts",
+    "reminders:preview": "tsx scripts/reminder-preview.ts"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",
