@@ -80,6 +80,17 @@ export async function updateMyProfile(
   return must(result) as Profile
 }
 
+export async function setEmailReminders(userId: string, on: boolean): Promise<Profile> {
+  const result = await supabase
+    .from('profiles')
+    .update({ email_reminders: on })
+    .eq('id', userId)
+    .select('*')
+    .single()
+
+  return must(result) as Profile
+}
+
 export async function deleteMyAccount(): Promise<void> {
   must(await supabase.rpc('delete_my_account'))
 }

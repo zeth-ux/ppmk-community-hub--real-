@@ -571,5 +571,54 @@ check("unknown code is rejected", is_err(r, "BAD_CHECKIN_CODE"), r)
 r = run("select count(*) from rsvps where event_id=%s and checked_in_at is not null", role=None, args=(EQ,))
 check("both scans recorded", r == [(2,)], r)
 
+# ---------- 0009: reminder emails ----------
+SECRET = "test-secret-" + "x" * 40
+run("insert into private.job_secrets (name, secret_hash) values ('reminders', encode(sha256(convert_to(%s, 'UTF8')), 'hex'))", role=None, args=(SECRET,))
+R1 = new_user("rem1@x.com"); R2 = new_user("rem2@x.com"); R3 = new_user("rem3@x.com"); R4 = new_user("rem4@x.com")
+for u, sid in [(R1, "2024401"), (R2, "2024402"), (R3, "2024403"), (R4, "2024404")]:
+    complete(u, sid, 2024)
+ER_TMR   = run(fb_ins, O, args=("Futsal tomorrow", 1))[0][0]
+ER_LATER = run(fb_ins, O, args=("Futsal next week", 7))[0][0]
+run("select set_my_rsvp(%s, 'attending')", R1, args=(ER_TMR,))
+run("select set_my_rsvp(%s, 'maybe')", R2, args=(ER_TMR,))
+run("select set_my_rsvp(%s, 'not_attending')", R3, args=(ER_TMR,))
+run("select set_my_rsvp(%s, 'attending')", R4, args=(ER_TMR,))
+run("select set_my_rsvp(%s, 'attending')", R1, args=(ER_LATER,))
+r = run("update profiles set email_reminders=false where id=auth.uid()", R4)
+check("student can turn reminders off", r == 1, r)
+r = run("update profiles set email_reminders=false where id=%s", R4, args=(R1,))
+check("student cannot turn off someone else's reminders", r == 0, r)
+
+due = "select email, status::text from reminders_due(%s) where event_id in (%s, %s) order by email"
+r = run(due, None, role="anon", args=(SECRET, ER_TMR, ER_LATER))
+check("job (signed-out + secret) gets going & maybe for tomorrow only", r == [("rem1@x.com", "attending"), ("rem2@x.com", "maybe")], r)
+r = run("select * from reminders_due(%s)", None, role="anon", args=("wrong-secret-" + "y" * 40,))
+check("wrong secret is refused", is_err(r, "NOT_ALLOWED"), r)
+r = run("select * from reminders_due(%s)", None, role="anon", args=("",))
+check("empty secret is refused", is_err(r, "NOT_ALLOWED"), r)
+r = run("select * from reminders_due(%s)", R1, args=("guess",))
+check("a signed-in student cannot fetch the list", is_err(r, "NOT_ALLOWED"), r)
+r = run("select * from private.job_secrets", None, role="anon")
+check("signed-out cannot read the secret table", is_err(r, "permission denied"), r)
+r = run("select * from private.job_secrets", A)
+check("even admins cannot read the secret table via the API", is_err(r, "permission denied"), r)
+r = run("select * from private.reminders_sent", A)
+check("reminder log is not reachable via the API", is_err(r, "permission denied"), r)
+r = run("select private.job_secret_ok('reminders', %s)", None, role="anon", args=(SECRET,))
+check("secret checker cannot be called directly", is_err(r, "permission denied"), r)
+
+r = run("select mark_reminded(%s, %s, %s)", None, role="anon", args=(SECRET, ER_TMR, R1))
+check("job marks R1 as reminded", not is_err(r), r)
+r = run("select mark_reminded(%s, %s, %s)", None, role="anon", args=(SECRET, ER_TMR, R1))
+check("marking twice is harmless", not is_err(r), r)
+r = run(due, None, role="anon", args=(SECRET, ER_TMR, ER_LATER))
+check("reminded people are not sent a second email", r == [("rem2@x.com", "maybe")], r)
+r = run("select mark_reminded(%s, %s, %s)", R2, args=("guess" * 10, ER_TMR, R2))
+check("cannot mark reminded without the secret", is_err(r, "NOT_ALLOWED"), r)
+before = run("select updated_at from rsvps where event_id=%s and user_id=%s", role=None, args=(ER_TMR, R2))[0][0]
+run("select mark_reminded(%s, %s, %s)", None, role="anon", args=(SECRET, ER_TMR, R2))
+after = run("select updated_at from rsvps where event_id=%s and user_id=%s", role=None, args=(ER_TMR, R2))[0][0]
+check("reminding doesn't change the RSVP's 'responded at' time", before == after, (before, after))
+
 print(f"\n{fails} failing checks")
 sys.exit(1 if fails else 0)

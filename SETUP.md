@@ -29,6 +29,9 @@ Everything here is on free plans. Nothing costs money.
    - `0008_qr_checkin.sql`: a check-in QR code for everyone going (on the event page).
      Organizers scan it with their normal phone camera and tap the link; that checks the
      student in. Only organizers/admins can use the codes.
+   - `0009_event_reminders.sql`: "your event is tomorrow" emails (see section 8) and an
+     on/off switch on the Me page. Safe to run before the Gmail is ready: nothing is
+     sent until section 8 is done.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 
@@ -148,3 +151,42 @@ Settings**. Claude will walk you through it.
 
 Also: Supabase free projects **pause after 7 days with no activity**. Open the site at least
 once a week (a free automatic keep-alive will be added later).
+
+## 8. Reminder emails (the day before each event)
+
+Every day at **09:00 Korea time**, Vercel runs `api/reminders.ts`. It emails everyone who
+said **Going** or **Maybe** to an event **tomorrow**, from the shared EMSU Gmail, with
+the time, place and a link to their check-in QR. Nobody gets two, and students can turn
+it off on their Me page. It does **not** use the Supabase `service_role` key.
+
+You need: migration `0009` run (section 1) and the shared Gmail's **app password**
+(Google Account → Security → 2-Step Verification on → App passwords).
+
+1. On your laptop, in the project folder: `npm run reminders:secret`. It prints a secret
+   and one line of SQL.
+2. **Supabase → SQL Editor:** run that SQL. (It stores only a fingerprint of the secret.)
+3. **Vercel → Settings → Environment Variables** (Production), add:
+
+   | Name | Value |
+   |---|---|
+   | `CRON_SECRET` | the secret from step 1 |
+   | `GMAIL_USER` | the shared EMSU Gmail address |
+   | `GMAIL_APP_PASSWORD` | its 16-character app password |
+   | `APP_URL` | `https://ppmk-community-hub-real.vercel.app` |
+
+4. **Deployments → ⋯ → Redeploy.** Vercel → **Settings → Cron Jobs** should now list
+   `/api/reminders`.
+5. **Test without sending anything:** Vercel → Cron Jobs → **Run** sends for real, so first
+   try a test run from a terminal (replace the secret):
+
+   ```bash
+   curl -H "Authorization: Bearer YOUR_CRON_SECRET" "https://ppmk-community-hub-real.vercel.app/api/reminders?dry=1"
+   ```
+
+   You get counts only, e.g. `{"testMode":true,"due":12,"sent":0,...}`. No names or emails.
+
+- Until `GMAIL_USER` / `GMAIL_APP_PASSWORD` are set, the job runs in **test mode** and
+  sends nothing.
+- Gmail allows about 500 emails a day: plenty for EMSU/PPMK.
+- Vercel's free plan runs it once a day, sometime between 09:00 and 09:59.
+- Unit tests: `npm run test:reminders` (fake database and mailer, no keys needed).
