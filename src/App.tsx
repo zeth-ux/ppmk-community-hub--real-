@@ -2,6 +2,7 @@ import { lazy } from 'react'
 import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './context/AuthContext'
+import { LanguageProvider } from './context/LanguageContext'
 import { supabaseConfigured } from './lib/supabase'
 import AppLayout from './components/AppLayout'
 import { RequireAuth, RequireRole } from './components/guards'
@@ -37,47 +38,49 @@ export default function App() {
   if (!supabaseConfigured) return <SetupNeeded />
 
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route element={<AppLayout />}>
-            {/* Open to everyone */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/survey" element={<SurveyPage />} />
-            <Route path="/ppmk" element={<PpmkPage />} />
-            <Route path="/about" element={<AboutPage />} />
+    <LanguageProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route element={<AppLayout />}>
+              {/* Open to everyone */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/survey" element={<SurveyPage />} />
+              <Route path="/ppmk" element={<PpmkPage />} />
+              <Route path="/about" element={<AboutPage />} />
 
-            {/* Signed-in members with a complete profile */}
-            <Route path="/events" element={<RequireAuth><EventsPage /></RequireAuth>} />
-            <Route path="/events/:id" element={<RequireAuth><EventDetailPage /></RequireAuth>} />
-            <Route path="/clubs" element={<RequireAuth><ClubsPage /></RequireAuth>} />
-            <Route path="/clubs/apply" element={<RequireAuth><ClubApplyPage /></RequireAuth>} />
-            <Route path="/clubs/:id" element={<RequireAuth><ClubPage /></RequireAuth>} />
-            {/* Explore Korea topics are readable signed out; visitors may post there */}
-            <Route path="/discuss" element={<RequireAuth allow="guest"><DiscussPage /></RequireAuth>} />
-            <Route path="/discuss/new" element={<RequireAuth allow="account"><DiscussNewPage /></RequireAuth>} />
-            <Route path="/discuss/:id" element={<RequireAuth allow="guest"><DiscussPostPage /></RequireAuth>} />
-            <Route path="/explore" element={<RequireAuth allow="guest"><ExplorePage /></RequireAuth>} />
-            <Route path="/me" element={<RequireAuth allow="account"><MePage /></RequireAuth>} />
-            <Route path="/ask" element={<RequireAuth><AskPage /></RequireAuth>} />
+              {/* Signed-in members with a complete profile */}
+              <Route path="/events" element={<RequireAuth><EventsPage /></RequireAuth>} />
+              <Route path="/events/:id" element={<RequireAuth><EventDetailPage /></RequireAuth>} />
+              <Route path="/clubs" element={<RequireAuth><ClubsPage /></RequireAuth>} />
+              <Route path="/clubs/apply" element={<RequireAuth><ClubApplyPage /></RequireAuth>} />
+              <Route path="/clubs/:id" element={<RequireAuth><ClubPage /></RequireAuth>} />
+              {/* Explore Korea topics are readable signed out; visitors may post there */}
+              <Route path="/discuss" element={<RequireAuth allow="guest"><DiscussPage /></RequireAuth>} />
+              <Route path="/discuss/new" element={<RequireAuth allow="account"><DiscussNewPage /></RequireAuth>} />
+              <Route path="/discuss/:id" element={<RequireAuth allow="guest"><DiscussPostPage /></RequireAuth>} />
+              <Route path="/explore" element={<RequireAuth allow="guest"><ExplorePage /></RequireAuth>} />
+              <Route path="/me" element={<RequireAuth allow="account"><MePage /></RequireAuth>} />
+              <Route path="/ask" element={<RequireAuth><AskPage /></RequireAuth>} />
 
-            {/* Roles */}
-            <Route
-              path="/organizer"
-              element={<RequireAuth><RequireRole role="organizer"><OrganizerPage /></RequireRole></RequireAuth>}
-            />
-            <Route
-              path="/admin"
-              element={<RequireAuth><RequireRole role="admin"><AdminPage /></RequireRole></RequireAuth>}
-            />
+              {/* Roles */}
+              <Route
+                path="/organizer"
+                element={<RequireAuth><RequireRole role="organizer"><OrganizerPage /></RequireRole></RequireAuth>}
+              />
+              <Route
+                path="/admin"
+                element={<RequireAuth><RequireRole role="admin"><AdminPage /></RequireRole></RequireAuth>}
+              />
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </LanguageProvider>
   )
 }
 

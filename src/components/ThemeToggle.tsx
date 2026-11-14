@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { useLanguage } from '../context/LanguageContext'
 
 type Theme = 'light' | 'dark'
 const KEY = 'ppmk-theme'
@@ -14,6 +15,7 @@ function current(): Theme {
  */
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(current)
+  const { t } = useLanguage()
 
   // Follow the device setting live until the person picks one themselves.
   useEffect(() => {
@@ -48,8 +50,8 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-      title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+      aria-label={theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
+      title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
       className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-slate-200 text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
     >
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}

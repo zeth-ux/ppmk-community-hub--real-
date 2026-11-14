@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import {
   getPublicStats,
   listClubs,
@@ -52,6 +53,8 @@ export default function HomePage() {
 
 function Landing() {
   const { session, profileComplete, isVisitor } = useAuth()
+  const { language, t } = useLanguage()
+  const dateLocale = language === 'ms' ? 'ms-MY' : language === 'ko' ? 'ko-KR' : 'en-GB'
   const { data } = useLoader(async () => {
     const [clubs, events, stats, places, opportunities] = await Promise.all([
       listPublicClubs().catch(() => []),
@@ -75,7 +78,7 @@ function Landing() {
   }, [])
 
   const start = session ? (profileComplete ? '/discuss' : '/me?welcome=1') : '/login?next=/events'
-  const startLabel = session ? (profileComplete ? 'Open the board' : 'Finish your profile') : 'Join the hub'
+  const startLabel = session ? (profileComplete ? t('home.openBoard') : t('home.finishProfile')) : t('home.joinHub')
 
   return (
     <div className="-mt-6 space-y-14 sm:space-y-20">
@@ -98,28 +101,27 @@ function Landing() {
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-end">
             <div>
               <p className="max-w-lg text-[17px] leading-7 text-slate-600">
-                Far from home, close at heart. Events, clubs, halal makan and hidden gems for Malaysian students in
-                Korea, run by {ppmk.shortName} and {emsu.shortName}.
+                {t('home.summary')}
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link to={start} className={`${buttonPrimary} px-6 py-3.5`}>
                   {startLabel} <ArrowRight size={17} />
                 </Link>
                 <Link to="/discuss" className={`${buttonSecondary} bg-background px-6 py-3.5`}>
-                  <Compass size={17} /> Visiting Korea? Explore
+                  <Compass size={17} /> {t('home.visitingKorea')}
                 </Link>
               </div>
-              {!session && <p className="mt-4 text-sm text-slate-500">No password. Your email and a 6-digit code.</p>}
-              {isVisitor && <p className="mt-4 text-sm text-slate-500">Signed in as a visitor: Explore Korea and Opportunities are open to you.</p>}
+              {!session && <p className="mt-4 text-sm text-slate-500">{t('home.noPassword')}</p>}
+              {isVisitor && <p className="mt-4 text-sm text-slate-500">{t('home.visitorAccess')}</p>}
             </div>
 
             <div className="space-y-3 rounded-xl border border-slate-200 bg-surface p-5">
               {data?.stats && (
                 <dl className="grid grid-cols-3 divide-x divide-slate-200">
                   {[
-                    [data.stats.members, 'students'],
-                    [data.stats.clubs, 'clubs'],
-                    [data.stats.events_this_year, 'events this year'],
+                    [data.stats.members, t('home.students')],
+                    [data.stats.clubs, t('home.clubs')],
+                    [data.stats.events_this_year, t('home.eventsThisYear')],
                   ].map(([n, label]) => (
                     <div key={label as string} className="flex flex-col-reverse px-4 first:pl-0">
                       <dt className="mt-1 text-sm text-slate-500">{label as string}</dt>
@@ -135,7 +137,7 @@ function Landing() {
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-bold">
-                      Next up: {new Date(`${data.events[0].event_date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })},{' '}
+                      {t('home.nextUp')}: {new Date(`${data.events[0].event_date}T00:00:00`).toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })},{' '}
                       {data.events[0].start_time.slice(0, 5)}
                     </p>
                     <p className="mt-0.5 truncate text-sm text-slate-500">
@@ -153,11 +155,11 @@ function Landing() {
       {/* About PPMK */}
       <section className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
         <div>
-          <h2 className="font-display text-5xl sm:text-6xl">Who we are</h2>
+          <h2 className="font-display text-5xl sm:text-6xl">{t('home.whoWeAre')}</h2>
           <p className="mt-5 leading-7 text-slate-600">{ppmk.summary}</p>
           <p className="mt-3 leading-7 text-slate-600">{emsu.summary}</p>
           <Link to="/ppmk" className="mt-5 inline-flex items-center gap-1.5 font-semibold text-primary hover:underline">
-            Committee and contacts <ArrowRight size={15} />
+            {t('home.committeeContacts')} <ArrowRight size={15} />
           </Link>
         </div>
         <dl className="grid border-t border-slate-200 sm:grid-cols-2">
@@ -173,7 +175,7 @@ function Landing() {
       {/* Upcoming events */}
       {data && data.events.length > 0 && (
         <section>
-          <SectionHead title="Coming up" text="Open events from PPMK and EMSU clubs." link={session ? '/events' : '/login?next=/events'} linkLabel="All events" />
+          <SectionHead title={t('home.comingUp')} text={t('home.openEvents')} link={session ? '/events' : '/login?next=/events'} linkLabel={t('home.allEvents')} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {data.events.map((e) => (
               <Link
@@ -182,7 +184,7 @@ function Landing() {
                 className={`${card} flex gap-4 p-4 transition hover:border-primary`}
               >
                 <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-slate-200 py-2">
-                  <span className="text-xs font-semibold text-primary">{new Date(`${e.event_date}T00:00:00`).toLocaleDateString('en-GB', { month: 'short' })}</span>
+                  <span className="text-xs font-semibold text-primary">{new Date(`${e.event_date}T00:00:00`).toLocaleDateString(dateLocale, { month: 'short' })}</span>
                   <span className="font-display text-3xl">{new Date(`${e.event_date}T00:00:00`).getDate()}</span>
                 </div>
                 <div className="min-w-0">
@@ -199,10 +201,10 @@ function Landing() {
       {/* Explore Korea: open to everyone */}
       <section>
         <SectionHead
-          title="Explore Korea, the Malaysian way"
-          text="Halal makan, hidden gems, trip itineraries and budgets, shared by students. Open to everyone, tourists too."
+          title={t('home.exploreTheMalaysianWay')}
+          text={t('home.exploreDescription')}
           link="/discuss?g=explore"
-          linkLabel="Open Explore Korea"
+          linkLabel={t('home.openExplore')}
         />
         <div className="mt-5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
           {FORUM_CATEGORIES.filter((c) => c.group === 'explore').map((c) => (
@@ -234,7 +236,7 @@ function Landing() {
       {/* Clubs */}
       {data && data.clubs.length > 0 && (
         <section>
-          <SectionHead title="Clubs under PPMK" text="Find your people, or start your own club with 5 friends." link={session ? '/clubs/apply' : '/login?next=/clubs/apply'} linkLabel="Start a club" />
+          <SectionHead title={t('home.clubsUnderPpmk')} text={t('home.findYourPeople')} link={session ? '/clubs/apply' : '/login?next=/clubs/apply'} linkLabel={t('home.startClub')} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.clubs.map((club) => (
               <Link
@@ -255,7 +257,7 @@ function Landing() {
       {/* Opportunities */}
       {data && data.opportunities.length > 0 && (
         <section>
-          <SectionHead title="Beyond PPMK" text="Youth forums, hackathons and programmes in Korea, Asia and online." link="/explore" linkLabel="All opportunities" />
+          <SectionHead title={t('home.beyondPpmk')} text={t('home.opportunitiesDescription')} link="/explore" linkLabel={t('home.allOpportunities')} />
           <ul className="mt-5 divide-y divide-slate-200 border-y border-slate-200">
             {data.opportunities.map((o) => (
               <li key={o.id}>
@@ -276,7 +278,7 @@ function Landing() {
 
       {/* How it works + CTA */}
       <section className="border-t border-slate-200 pt-10">
-        <h2 className="font-display text-4xl sm:text-5xl">How it works</h2>
+        <h2 className="font-display text-4xl sm:text-5xl">{t('home.howItWorks')}</h2>
         <ol className="mt-6 grid gap-6 sm:grid-cols-3">
           {[
             [UserPlus, 'Sign up once', 'Email + 6-digit code, pick a username. PPMK students add their details once; visitors just need a username.'],
@@ -329,6 +331,7 @@ function greeting() {
 
 function SignedInHome() {
   const { session, profile, isOrganizer, isAdmin } = useAuth()
+  const { t } = useLanguage()
   const userId = session!.user.id
   const { data: pendingPhotos } = useLoader(() => (isAdmin ? listPendingPhotos().catch(() => []) : Promise.resolve([])), [isAdmin])
 
@@ -397,7 +400,7 @@ function SignedInHome() {
 
       {data && data.myClubs.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xl font-bold">Your clubs</h2>
+          <h2 className="text-xl font-bold">{t('home.yourClubs')}</h2>
           <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none]">
             {data.myClubs.map((m) => (
               <Link
@@ -414,12 +417,12 @@ function SignedInHome() {
         </section>
       )}
 
-      <MyRsvpsList userId={userId} title="Your next events" />
+      <MyRsvpsList userId={userId} title={t('home.yourNextEvents')} />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Coming up</h2>
-          <Link to="/events" className={buttonSecondary}>See all</Link>
+          <h2 className="text-xl font-bold">{t('home.comingUp')}</h2>
+          <Link to="/events" className={buttonSecondary}>{t('home.seeAll')}</Link>
         </div>
         {loading ? (
           <Spinner />
@@ -439,8 +442,8 @@ function SignedInHome() {
       {data && data.posts.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">People are talking about</h2>
-            <Link to="/discuss" className={buttonSecondary}>Open board</Link>
+            <h2 className="text-xl font-bold">{t('home.peopleAreTalking')}</h2>
+            <Link to="/discuss" className={buttonSecondary}>{t('home.openBoard')}</Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {data.posts.map((post) => {
