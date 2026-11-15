@@ -865,7 +865,7 @@ function ManageTab({
           <ul className="mt-3 space-y-3">
             {pending.map((m) => (
               <li key={m.user_id} className="rounded-xl border border-slate-200 p-3">
-                <p className="font-semibold">@{m.username ?? 'student'} {m.batch && <span className="text-xs font-normal text-slate-500">· Batch {m.batch}</span>}</p>
+                <p className="font-semibold">@{m.username ?? 'student'} {m.batch && <span className="text-xs font-normal text-slate-500">· {t('form.batchN').replace('{n}', String(m.batch))}</span>}</p>
                 {m.message && <p className="mt-1 rounded-lg bg-slate-50 p-2 text-sm text-slate-600">“{m.message}”</p>}
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => void decide(m.user_id, true)} className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-bold text-white">

@@ -1,3 +1,4 @@
+import { translateNow } from '../context/LanguageContext'
 import { FORUM_CATEGORIES } from './types'
 import type {
   Club,
@@ -55,10 +56,15 @@ export function isPast(event: HubEvent): boolean {
   return event.event_date < todayKst()
 }
 
-export const STATUS_LABEL: Record<RsvpStatus, string> = {
-  attending: 'Going',
-  maybe: 'Maybe',
-  not_attending: 'Not going',
+const STATUS_KEY = {
+  attending: 'status.going',
+  maybe: 'status.maybe',
+  not_attending: 'status.notGoing',
+} as const
+
+/** "Going" / "Maybe" / "Not going" in the person's language. */
+export function statusLabel(status: RsvpStatus): string {
+  return translateNow(STATUS_KEY[status])
 }
 
 export const STATUS_STYLE: Record<RsvpStatus, string> = {
@@ -129,47 +135,47 @@ export function friendlyError(error: unknown): string {
         : String(error)
 
   if (message.includes('EVENT_FULL'))
-    return 'Sorry, this event is full. You can still choose "Maybe".'
+    return translateNow('err.eventFull')
   if (message.includes('FEEDBACK_CLOSED'))
-    return 'Feedback is open from the day of the event until 14 days after, for people who went.'
+    return translateNow('err.feedbackClosed')
   if (message.includes('BAD_CHECKIN_CODE'))
-    return "This QR code isn't valid. The RSVP may have been removed."
+    return translateNow('err.badCheckinCode')
   if (message.includes('LAST_ADMIN'))
-    return 'You are the only admin. Make someone else an admin first.'
+    return translateNow('err.lastAdmin')
   if (message.includes('NOT_EVENT_ORGANIZER'))
-    return 'Only the organizer who created this event (or an admin) can check people in.'
+    return translateNow('err.notEventOrganizer')
   if (message.includes('NOT_ALLOWED'))
-    return "You don't have permission to do that."
+    return translateNow('err.notAllowed')
   if (message.includes('profiles_username_key'))
-    return 'That username is taken. Try another one.'
+    return translateNow('err.usernameTaken')
   if (message.includes('profiles_username_format'))
-    return 'Usernames are 3–20 lowercase letters, numbers, _ or .'
+    return translateNow('err.usernameFormat')
   if (message.includes('PHOTO_DAILY_LIMIT'))
-    return 'You have uploaded a lot of photos today. Please try again tomorrow.'
+    return translateNow('err.photoDailyLimit')
   if (message.includes('PHOTO_POST_LIMIT'))
-    return 'You can add up to 6 photos to a post.'
+    return translateNow('err.photoPostLimit')
   if (message.includes('MEMBERS_ONLY'))
-    return 'This part of the hub is for PPMK members.'
+    return translateNow('err.membersOnly')
   if (message.includes('LAST_PRESIDENT'))
-    return 'A club needs a president. Hand the role to someone else first.'
+    return translateNow('err.lastPresident')
   if (message.includes('ONLY_PRESIDENT'))
-    return 'Only the club president can change the president or vice president.'
+    return translateNow('err.onlyPresident')
   if (message.includes('PROFILE_INCOMPLETE'))
-    return 'Please finish your profile first.'
+    return translateNow('err.profileIncomplete')
   if (message.includes('ALREADY_DECIDED'))
-    return 'This application has already been decided.'
+    return translateNow('err.alreadyDecided')
   if (message.includes('profiles_student_id_key'))
-    return 'That student ID is already registered to another account.'
+    return translateNow('err.studentIdTaken')
   if (message.includes('permission denied for'))
-    return 'The server refused this action (database permissions). Please tell the EMSU tech team.'
+    return translateNow('err.permissionDenied')
   if (message.includes('row-level security'))
-    return 'This action is not allowed. The RSVP may be closed, or your profile may be incomplete.'
+    return translateNow('err.rowSecurity')
   if (message.includes('rate limit') || message.includes('over_email_send_rate_limit'))
-    return 'Too many login emails were sent. Please wait a few minutes and try again.'
+    return translateNow('err.rateLimit')
   if (message.includes('Token has expired') || message.includes('otp_expired'))
-    return 'That code has expired or is wrong. Please request a new one.'
+    return translateNow('err.codeExpired')
   if (message.includes('Failed to fetch'))
-    return 'Could not reach the server. Check your internet connection.'
+    return translateNow('err.network')
 
   return message
 }
@@ -207,10 +213,16 @@ export function deadlineLabel(date: string | null): { text: string; urgent: bool
   if (!date) return null
   const today = new Date(`${todayKst()}T00:00:00`).getTime()
   const days = Math.round((new Date(`${date}T00:00:00`).getTime() - today) / 86400000)
-  if (days < 0) return { text: 'Deadline passed', urgent: false, past: true }
-  if (days === 0) return { text: 'Closes today', urgent: true, past: false }
-  if (days === 1) return { text: 'Closes tomorrow', urgent: true, past: false }
-  return { text: days <= 14 ? `Closes in ${days} days` : `Closes ${formatDate(date)}`, urgent: days <= 3, past: false }
+  if (days < 0) return { text: translateNow('deadline.passed'), urgent: false, past: true }
+  if (days === 0) return { text: translateNow('deadline.today'), urgent: true, past: false }
+  if (days === 1) return { text: translateNow('deadline.tomorrow'), urgent: true, past: false }
+  return {
+    text: days <= 14
+      ? translateNow('deadline.inDays').replace('{days}', String(days))
+      : translateNow('deadline.on').replace('{date}', formatDate(date)),
+    urgent: days <= 3,
+    past: false,
+  }
 }
 
 /** Full link to a page of the app (for sharing). */

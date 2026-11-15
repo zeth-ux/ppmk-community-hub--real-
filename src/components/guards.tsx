@@ -68,28 +68,31 @@ function ProfileLoadError() {
 
 export function MembersOnly({ compact = false }: { compact?: boolean }) {
   const { session } = useAuth()
+  const { t } = useLanguage()
+  const [before, after = ''] = t('guards.membersBody').split('{explore}')
   return (
     <div className={`mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface text-center ${compact ? 'p-6' : 'p-8 sm:p-10'}`}>
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-primary">
         <Lock size={22} />
       </div>
-      <p className="mt-4 text-lg font-bold">For PPMK members</p>
+      <p className="mt-4 text-lg font-bold">{t('guards.membersTitle')}</p>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        Events, clubs and these discussions are for Malaysian students in PPMK. Visitors can still share and find
-        food, hidden gems and trip ideas in <strong>Explore Korea</strong>.
+        {before}
+        <strong>{t('footer.exploreKorea')}</strong>
+        {after}
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <Link to="/discuss?g=explore" className={buttonPrimary}>
-          <MessagesSquare size={16} /> Explore Korea
+          <MessagesSquare size={16} /> {t('footer.exploreKorea')}
         </Link>
         <Link to="/explore" className={buttonSecondary}>
-          <Compass size={16} /> Opportunities
+          <Compass size={16} /> {t('footer.opportunities')}
         </Link>
       </div>
       <p className="mt-4 text-xs text-slate-500">
-        A PPMK student?{' '}
+        {t('guards.aPpmkStudent')}{' '}
         <Link to={session ? '/me?become=member' : '/login'} className="font-semibold text-primary">
-          {session ? 'Switch to a member profile' : 'Sign in'}
+          {session ? t('guards.switchToMember') : t('nav.signIn')}
         </Link>
       </p>
     </div>
@@ -104,15 +107,15 @@ export function RequireRole({
   children: ReactNode
 }) {
   const { isOrganizer, isAdmin } = useAuth()
+  const { t } = useLanguage()
   const allowed = role === 'admin' ? isAdmin : isOrganizer
 
   if (!allowed) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface p-8 text-center">
-        <p className="text-lg font-bold">Organizers only</p>
+        <p className="text-lg font-bold">{t('guards.organizersOnly')}</p>
         <p className="mt-2 text-sm text-slate-500">
-          This page is for {role === 'admin' ? 'admins' : 'event organizers'}.
-          If you should have access, ask an EMSU admin to update your role.
+          {role === 'admin' ? t('guards.adminsOnlyBody') : t('guards.organizersOnlyBody')}
         </p>
       </div>
     )

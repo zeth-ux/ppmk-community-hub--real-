@@ -217,7 +217,7 @@ function Landing() {
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {data.places.map((p) => (
               <Link key={p.id} to={`/discuss/${p.id}`} className={`${card} flex flex-col overflow-hidden transition hover:border-emerald-400`}>
-                {data.thumbs[p.id] && <img src={data.thumbs[p.id]} alt={`Photo from “${p.title}”`} loading="lazy" className="h-36 w-full object-cover" />}
+                {data.thumbs[p.id] && <img src={data.thumbs[p.id]} alt={t('home.photoFrom').replace('{title}', p.title)} loading="lazy" className="h-36 w-full object-cover" />}
                 <div className="flex flex-1 flex-col p-4">
                 <p className="text-xs font-semibold text-emerald-700">{categoryInfo(p.category).emoji} {categoryInfo(p.category).label}</p>
                 <p className="mt-1 line-clamp-2 font-bold leading-snug">{p.title}</p>
@@ -247,7 +247,7 @@ function Landing() {
                 <p className="text-xs font-semibold text-primary">{club.category}</p>
                 <p className="mt-1 font-bold">{club.name}</p>
                 {club.tagline && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{club.tagline}</p>}
-                <p className="mt-3 text-xs text-slate-400">{club.members} members</p>
+                <p className="mt-3 text-xs text-slate-400">{t('home.membersCount').replace('{n}', String(club.members))}</p>
               </Link>
             ))}
           </div>
@@ -281,9 +281,9 @@ function Landing() {
         <h2 className="font-display text-4xl sm:text-5xl">{t('home.howItWorks')}</h2>
         <ol className="mt-6 grid gap-6 sm:grid-cols-3">
           {[
-            [UserPlus, 'Sign up once', 'Email + 6-digit code, pick a username. PPMK students add their details once; visitors just need a username.'],
-            [MousePointerClick, 'Tap to join', 'Open an event link from the group chat and tap "I\'m going". Join clubs the same way.'],
-            [ClipboardList, 'Organizers relax', 'Club leaders get live attendee lists, check-in and a CSV export, without new spreadsheets.'],
+            [UserPlus, t('home.step1Title'), t('home.step1Text')],
+            [MousePointerClick, t('home.step2Title'), t('home.step2Text')],
+            [ClipboardList, t('home.step3Title'), t('home.step3Text')],
           ].map(([Icon, title, text], i) => {
             const I = Icon as typeof UserPlus
             return (
@@ -377,7 +377,7 @@ function SignedInHome() {
               className={`${buttonPrimary} shrink-0 py-2.5`}
             >
               <ClipboardList size={16} />
-              Create an event
+              {t('home.createEvent')}
             </Link>
           )}
           {quick.map(({ to, label, icon: Icon }) => (
@@ -392,7 +392,7 @@ function SignedInHome() {
       {pendingPhotos && pendingPhotos.length > 0 && (
         <Link to="/admin" className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-900 hover:bg-amber-100">
           <span className="font-semibold">
-            📷 {pendingPhotos.length} {pendingPhotos.length === 1 ? 'photo is' : 'photos are'} waiting for your approval
+            {t(pendingPhotos.length === 1 ? 'home.photosWaitingOne' : 'home.photosWaitingMany').replace('{n}', String(pendingPhotos.length))}
           </span>
           <ArrowRight size={18} />
         </Link>
@@ -434,7 +434,7 @@ function SignedInHome() {
           </div>
         ) : (
           <p className="rounded-2xl border border-dashed border-slate-300 bg-surface p-6 text-center text-sm text-slate-500">
-            No upcoming events yet.
+            {t('home.noUpcoming')}
           </p>
         )}
       </section>

@@ -358,7 +358,7 @@ function OpportunityCard({
   const due = deadlineLabel(o.apply_deadline)
   const dueText = deadlineText(o.apply_deadline, due, language, t)
   const teamCategory = o.kind === 'competition' ? 'hackathon' : 'activities'
-  const teamHref = `/discuss/new?c=${teamCategory}&title=${encodeURIComponent(`Looking for teammates: ${o.title}`)}${
+  const teamHref = `/discuss/new?c=${teamCategory}&title=${encodeURIComponent(t('explore.teamTitle').replace('{title}', o.title))}${
     o.url ? `&link=${encodeURIComponent(o.url)}` : ''
   }${o.apply_deadline ? `&deadline=${o.apply_deadline}` : ''}`
 

@@ -1,5 +1,7 @@
 import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react'
 
+import { useLanguage } from '../context/LanguageContext'
+
 /**
  * Six separate boxes for the 6-digit sign-in code. Typing moves to the next
  * box, Backspace goes back, and pasting the whole code (or the phone's
@@ -18,6 +20,7 @@ export default function CodeInput({
   length?: number
   disabled?: boolean
 }) {
+  const { t } = useLanguage()
   const refs = useRef<(HTMLInputElement | null)[]>([])
   const digits = Array.from({ length }, (_, i) => value[i] ?? '')
 
@@ -52,7 +55,7 @@ export default function CodeInput({
   }
 
   return (
-    <div className="flex justify-between gap-2 sm:gap-3" role="group" aria-label="6-digit code">
+    <div className="flex justify-between gap-2 sm:gap-3" role="group" aria-label={t('code.label')}>
       {digits.map((digit, i) => (
         <input
           key={i}

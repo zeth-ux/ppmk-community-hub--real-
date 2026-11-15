@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, Users } from 'lucide-react'
 
+import { useLanguage } from '../context/LanguageContext'
 import {
-  STATUS_LABEL,
   STATUS_STYLE,
   eventImage,
   eventTimeRange,
   formatDate,
   isPast,
+  statusLabel,
 } from '../lib/format'
 import type { HubEvent, RsvpCounts, RsvpStatus } from '../lib/types'
 
@@ -22,6 +23,7 @@ export default function EventCard({
   counts?: RsvpCounts
   compact?: boolean
 }) {
+  const { t } = useLanguage()
   const going = counts?.attending ?? 0
   const full = event.capacity !== null && going >= event.capacity
 
@@ -52,13 +54,13 @@ export default function EventCard({
             <span
               className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[myStatus]}`}
             >
-              {STATUS_LABEL[myStatus]}
+              {statusLabel(myStatus)}
             </span>
           )}
 
           {full && !compact && (
             <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-on-ink">
-              Full
+              {t('eventCard.full')}
             </span>
           )}
         </div>
@@ -79,8 +81,9 @@ export default function EventCard({
           {!compact && (
             <p className="flex items-center gap-1.5">
               <Users size={14} className="shrink-0" />
-              {going} going
-              {event.capacity !== null && ` · ${event.capacity} ${event.capacity === 1 ? 'place' : 'places'}`}
+              {going} {t('eventCard.going')}
+              {event.capacity !== null &&
+                ` · ${event.capacity === 1 ? t('eventCard.capacityOne') : t('eventCard.capacity').replace('{n}', String(event.capacity))}`}
             </p>
           )}
         </div>
