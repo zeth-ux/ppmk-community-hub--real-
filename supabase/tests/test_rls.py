@@ -564,12 +564,121 @@ check("organizer scans and checks the student in", r == [("Student 2024301", "20
 first = run("select checked_in_at from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ, Q1))[0][0]
 r = run("select already_checked_in, checked_in_at from check_in_by_code(%s)", O, args=(CODE1,))
 check("scanning twice says 'already checked in' and keeps the first time", r == [(True, first)], r)
-r = run("select status, already_checked_in from check_in_by_code(%s)", A, args=(CODE2,))
-check("admin can scan too; shows the person said maybe", r == [("maybe", False)], r)
 r = run("select * from check_in_by_code(gen_random_uuid())", O)
 check("unknown code is rejected", is_err(r, "BAD_CHECKIN_CODE"), r)
 r = run("select count(*) from rsvps where event_id=%s and checked_in_at is not null", role=None, args=(EQ,))
-check("both scans recorded", r == [(2,)], r)
+check("only the 'Going' scan was recorded so far", r == [(1,)], r)
+
+# ---------- 0010: scanning asks first when something looks wrong ----------
+r = run("select status, already_checked_in, checked_in, problems from check_in_by_code(%s)", A, args=(CODE2,))
+check("a 'Maybe' RSVP is NOT checked in on scan; it is flagged", r == [("maybe", False, False, ["NOT_GOING"])], r)
+r = run("select checked_in_at from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ, Q2))
+check("...and nothing was saved for them", r == [(None,)], r)
+r = run("select checked_in, already_checked_in from check_in_by_code(%s)", A, args=(CODE2,))
+check("scanning again without confirming still saves nothing", r == [(False, False)], r)
+r = run("select * from check_in_by_code(%s, true)", Q2, args=(CODE2,))
+check("a student cannot force a check-in", is_err(r, "NOT_ALLOWED"), r)
+r = run("select checked_in, already_checked_in, problems from check_in_by_code(%s, true)", A, args=(CODE2,))
+check("confirming ('check in anyway') saves it", r == [(True, False, [])], r)
+r = run("select count(*) from rsvps where event_id=%s and checked_in_at is not null", role=None, args=(EQ,))
+check("both are recorded after the confirm", r == [(2,)], r)
+
+Q3 = new_user("qr3@x.com"); Q4 = new_user("qr4@x.com"); Q5 = new_user("qr5@x.com")
+for u, sid in [(Q3, "2024303"), (Q4, "2024304"), (Q5, "2024305")]:
+    complete(u, sid, 2024)
+EQ_PAST = run(fb_ins, O, args=("QR yesterday", 1))[0][0]  # RSVP while it is still ahead, then move it back
+EQ_FUT  = run(fb_ins, O, args=("QR next week", 7))[0][0]
+run("select set_my_rsvp(%s, 'attending')", Q3, args=(EQ_PAST,))
+run("select set_my_rsvp(%s, 'not_attending')", Q4, args=(EQ_FUT,))
+run("select set_my_rsvp(%s, 'attending')", Q5, args=(EQ_FUT,))
+run("update events set event_date = public.today_kst() - 1 where id=%s", role=None, args=(EQ_PAST,))
+CODE3 = run("select checkin_code from rsvps where event_id=%s", Q3, args=(EQ_PAST,))[0][0]
+CODE4 = run("select checkin_code from rsvps where event_id=%s", Q4, args=(EQ_FUT,))[0][0]
+CODE5 = run("select checkin_code from rsvps where event_id=%s", Q5, args=(EQ_FUT,))[0][0]
+r = run("select checked_in, problems from check_in_by_code(%s)", O, args=(CODE3,))
+check("a QR for yesterday's event is flagged and not saved", r == [(False, ["NOT_TODAY"])], r)
+r = run("select checked_in, problems from check_in_by_code(%s)", O, args=(CODE5,))
+check("a QR for a future event is flagged and not saved", r == [(False, ["NOT_TODAY"])], r)
+r = run("select checked_in, problems from check_in_by_code(%s)", O, args=(CODE4,))
+check("wrong day AND 'Can't go' lists both problems", r == [(False, ["NOT_TODAY", "NOT_GOING"])], r)
+r = run("select count(*) from rsvps where event_id in (%s, %s) and checked_in_at is not null", role=None, args=(EQ_PAST, EQ_FUT))
+check("none of the flagged scans were saved", r == [(0,)], r)
+r = run("select checked_in, already_checked_in from check_in_by_code(%s, true)", O, args=(CODE3,))
+check("organizer can confirm a wrong-day check-in", r == [(True, False)], r)
+r = run("select checked_in, already_checked_in, problems from check_in_by_code(%s)", O, args=(CODE3,))
+check("after that, scanning says 'already checked in' with no problems", r == [(True, True, [])], r)
+r = run("select checked_in_at is not null from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ_PAST, Q3))
+check("the confirmed one is saved", r == [(True,)], r)
+r = run("select checked_in_at is null from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ_FUT, Q5))
+check("other flagged ones stay unsaved", r == [(True,)], r)
+r = run("select * from check_in_by_code(%s, true)", None, role="anon", args=(CODE5,))
+check("signed-out cannot force a check-in", is_err(r, "permission denied"), r)
+
+# ---------- 0010: only the event's creator (or an admin) can check people in ----------
+O2 = new_user("org2@x.com")
+run("update profiles set role='organizer' where id=%s", role=None, args=(O2,))
+r = run("select checked_in_at is null from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ_FUT, Q5))
+check("(setup) Q5 is not checked in yet", r == [(True,)], r)
+r = run("select * from check_in_by_code(%s)", O2, args=(CODE5,))
+check("another organizer cannot scan someone else's event", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select * from check_in_by_code(%s, true)", O2, args=(CODE5,))
+check("...not even with 'check in anyway'", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select check_in(%s, %s)", O2, args=(EQ_FUT, Q5))
+check("another organizer cannot tick someone off the list either", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select check_in(%s, %s, false)", O2, args=(EQ, Q1))
+check("...or undo someone's check-in", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select checked_in_at is not null from rsvps where event_id=%s and user_id=%s", role=None, args=(EQ, Q1))
+check("...and the earlier check-in is still there", r == [(True,)], r)
+r = run("select check_in(%s, %s)", S1, args=(EQ_FUT, Q5))
+check("students are still refused outright", is_err(r, "NOT_ALLOWED"), r)
+r = run("select check_in(%s, %s)", O, args=(EQ_FUT, Q5))
+check("the creator can tick someone off", not is_err(r) and r[0][0] is not None, r)
+r = run("select check_in(%s, %s)", A, args=(EQ_FUT, Q4))
+check("an admin can check in for any event", not is_err(r) and r[0][0] is not None, r)
+r = run("select * from check_in_by_code(%s)", A, args=(CODE3,))
+check("an admin can scan for any event", not is_err(r), r)
+
+EQ_O2 = run(fb_ins, O2, args=("QR by org2", 0))[0][0]
+run("select set_my_rsvp(%s, 'attending')", Q3, args=(EQ_O2,))
+CODE_O2 = run("select checkin_code from rsvps where event_id=%s", Q3, args=(EQ_O2,))[0][0]
+r = run("select * from check_in_by_code(%s)", O, args=(CODE_O2,))
+check("the first organizer cannot scan org2's event", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select checked_in, problems from check_in_by_code(%s)", O2, args=(CODE_O2,))
+check("org2 can scan their own event", r == [(True, [])], r)
+
+run("update events set created_by = null where id=%s", role=None, args=(EQ_O2,))
+r = run("select can_check_in(%s)", O2, args=(EQ_O2,))
+check("an event with no creator left: its old organizer is refused", r == [(False,)], r)
+r = run("select can_check_in(%s)", A, args=(EQ_O2,))
+check("...but an admin can still check people in", r == [(True,)], r)
+r = run("select can_check_in(%s)", S1, args=(EQ_O2,))
+check("students can never check people in", r == [(False,)], r)
+r = run("select can_check_in(%s)", None, role="anon", args=(EQ_O2,))
+check("signed-out cannot even ask", is_err(r, "permission denied"), r)
+
+# ---------- Deleting an account removes its photo records ----------
+# (The photo FILES are removed by the website before it calls delete_my_account,
+# because Supabase does not allow deleting storage files from SQL.)
+D1 = new_user("del1@x.com"); D2 = new_user("del2@x.com")
+for u, sid, name in [(D1, "2024501", "deleter"), (D2, "2024502", "keeper")]:
+    complete(u, sid, 2024)
+    run("update profiles set username=%s where id=%s", role=None, args=(name, u))
+DP1 = run(fp, D1, args=("hidden_gems", "Deleter's cafe", False))[0][0]
+DP2 = run(fp, D2, args=("hidden_gems", "Keeper's cafe", False))[0][0]
+run(ph, D1, args=(f"{D1}/a.jpg", DP1)); run(ph, D1, args=(f"{D1}/b.jpg", DP1))
+run(ph, D2, args=(f"{D2}/k.jpg", DP2))
+r = run("select path from photos where uploaded_by=auth.uid() order by path", D1)
+check("the app can list the person's own photo files (to remove them)", r == [(f"{D1}/a.jpg",), (f"{D1}/b.jpg",)], r)
+r = run("select count(*) from photos where uploaded_by=%s", D1, args=(D2,))
+check("...and cannot list anyone else's", r == [(0,)], r)
+r = run("select delete_my_account()", D1)
+check("D1 deletes their account", not is_err(r), r)
+r = run("select count(*) from photos where uploaded_by=%s", role=None, args=(D1,))
+check("D1's photo records are gone with the account", r == [(0,)], r)
+r = run("select count(*) from forum_posts where author_id=%s", role=None, args=(D1,))
+check("D1's posts are gone too", r == [(0,)], r)
+r = run("select count(*) from photos where uploaded_by=%s", role=None, args=(D2,))
+check("other people's photos are untouched", r == [(1,)], r)
 
 # ---------- 0009: reminder emails ----------
 SECRET = "test-secret-" + "x" * 40

@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { deleteEvent, listAttendees, setCheckIn } from '../../lib/api'
 import {
@@ -76,6 +77,9 @@ export default function EventManagePanel({
   onChanged: () => void
 }) {
   const { t } = useLanguage()
+  const { profile, isAdmin } = useAuth()
+  // Same rule as the database: only the event's creator (or an admin) checks people in.
+  const canCheckIn = isAdmin || (event.created_by !== null && event.created_by === profile?.id)
   const { data: attendees, setData, loading, error } = useLoader(
     () => listAttendees(event.id),
     [event.id],
@@ -195,9 +199,13 @@ export default function EventManagePanel({
 
         <p className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
           <Camera size={16} className="mt-0.5 shrink-0 text-primary" />
-          <span>
-            <strong>{t('checkin.doorTitle')}</strong> {t('checkin.doorBody')}
-          </span>
+          {canCheckIn ? (
+            <span>
+              <strong>{t('checkin.doorTitle')}</strong> {t('checkin.doorBody')}
+            </span>
+          ) : (
+            <span>{t('checkin.creatorOnly')}</span>
+          )}
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -272,7 +280,9 @@ export default function EventManagePanel({
                       <button
                         onClick={() => void toggleCheckIn(a)}
                         aria-pressed={Boolean(a.checked_in_at)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                        disabled={!canCheckIn}
+                        title={canCheckIn ? undefined : t('checkin.creatorOnly')}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-60 ${
                           a.checked_in_at
                             ? 'bg-green-600 text-white'
                             : 'border border-slate-200 text-slate-600 hover:bg-slate-50'

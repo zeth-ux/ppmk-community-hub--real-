@@ -5,6 +5,7 @@ import type {
   Announcements,
   AppRole,
   Attendee,
+  CheckInProblem,
   CheckInResult,
   Club,
   ClubApplication,
@@ -45,6 +46,7 @@ import type {
   RsvpCounts,
   RsvpStatus,
 } from '../lib/types'
+import { todayKst } from '../lib/format'
 import {
   DEMO_USER_ID,
   demoApplications,
@@ -199,12 +201,19 @@ export async function listAttendees(eventId: string): Promise<Attendee[]> {
   )
 }
 
-export async function checkInByCode(code: string): Promise<CheckInResult> {
+export async function checkInByCode(code: string, force = false): Promise<CheckInResult> {
   const rsvp = demoRsvps.find((r) => r.checkin_code === code)
   const event = demoEvents.find((e) => e.id === rsvp?.event_id)
   if (!rsvp || !event) throw new Error('BAD_CHECKIN_CODE')
   const already = rsvp.checked_in_at !== null
-  if (!already) rsvp.checked_in_at = stamp()
+  // Same rule as the real database: flag a wrong day or a non-"Going" RSVP
+  // and only save once the organizer confirms.
+  const problems: CheckInProblem[] = []
+  if (!already) {
+    if (event.event_date !== todayKst()) problems.push('NOT_TODAY')
+    if (rsvp.status !== 'attending') problems.push('NOT_GOING')
+    if (problems.length === 0 || force) rsvp.checked_in_at = stamp()
+  }
   return wait({
     event_id: event.id,
     event_title: event.title,
@@ -214,8 +223,10 @@ export async function checkInByCode(code: string): Promise<CheckInResult> {
     student_id: demoProfile.student_id,
     batch: demoProfile.batch,
     status: rsvp.status,
-    checked_in_at: rsvp.checked_in_at!,
+    checked_in_at: rsvp.checked_in_at,
     already_checked_in: already,
+    checked_in: rsvp.checked_in_at !== null,
+    problems: rsvp.checked_in_at !== null ? [] : problems,
   })
 }
 
