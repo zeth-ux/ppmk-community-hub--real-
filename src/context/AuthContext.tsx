@@ -20,6 +20,12 @@ type AuthContextValue = {
   session: Session | null
   profile: Profile | null
   profileComplete: boolean
+  /**
+   * The profile could not be loaded (network or server problem). This is not
+   * the same as "no profile yet": the person must NOT be sent to the
+   * "complete your profile" form, because they probably already have one.
+   */
+  profileError: boolean
   /** A PPMK member (not a visitor) with a complete profile. */
   isMember: boolean
   isVisitor: boolean
@@ -32,6 +38,19 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+/** Loads the profile, trying once more after a short pause (a blip on phone data is common). */
+async function loadProfile(userId: string): Promise<{ profile: Profile | null; failed: boolean }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return { profile: await getMyProfile(userId), failed: false }
+    } catch (error) {
+      console.error('Could not load profile', error)
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 1500))
+    }
+  }
+  return { profile: null, failed: true }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
@@ -40,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // signed-in user, we're still loading (prevents a wrong redirect to the
   // "complete your profile" page right after sign-in).
   const [loadedFor, setLoadedFor] = useState<string | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const userId = session?.user.id ?? null
 
@@ -62,30 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     if (!userId) return
 
-    try {
-      setProfile(await getMyProfile(userId))
-    } catch (error) {
-      console.error('Could not load profile', error)
-      setProfile(null)
-    } finally {
-      setLoadedFor(userId)
-    }
+    const result = await loadProfile(userId)
+    // If it failed, keep whatever profile we already had instead of wiping it.
+    if (!result.failed) setProfile(result.profile)
+    setLoadFailed(result.failed)
+    setLoadedFor(userId)
   }, [userId])
 
   useEffect(() => {
     if (!userId) return
     let cancelled = false
 
-    getMyProfile(userId)
-      .catch((error: unknown) => {
-        console.error('Could not load profile', error)
-        return null
-      })
-      .then((loaded) => {
-        if (cancelled) return
-        setProfile(loaded)
-        setLoadedFor(userId)
-      })
+    loadProfile(userId).then((result) => {
+      if (cancelled) return
+      setProfile(result.profile)
+      setLoadFailed(result.failed)
+      setLoadedFor(userId)
+    })
 
     return () => {
       cancelled = true
@@ -107,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile: current,
       profileComplete: isProfileComplete(current),
+      profileError: userId !== null && loadedFor === userId && loadFailed && current === null,
       isMember: isMemberProfile(current),
       isVisitor: current?.account_type === 'visitor' && role === 'student',
       isOrganizer: role === 'organizer' || role === 'admin',
@@ -115,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshProfile,
       signOut,
     }
-  }, [sessionLoading, loadedFor, userId, session, profile, refreshProfile, signOut])
+  }, [sessionLoading, loadedFor, loadFailed, userId, session, profile, refreshProfile, signOut])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

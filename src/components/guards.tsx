@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { Compass, Lock, MessagesSquare } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { Spinner, buttonPrimary, buttonSecondary } from './ui'
 
 /**
@@ -19,7 +20,7 @@ export function RequireAuth({
   children: ReactNode
   allow?: 'member' | 'account' | 'guest'
 }) {
-  const { loading, session, profileComplete, isMember } = useAuth()
+  const { loading, session, profileComplete, profileError, isMember } = useAuth()
   const location = useLocation()
   const here = location.pathname + location.search
 
@@ -30,6 +31,10 @@ export function RequireAuth({
     return <Navigate to={`/login?next=${encodeURIComponent(here)}`} replace />
   }
 
+  // Couldn't load the profile (e.g. a network blip): ask to retry. Never send
+  // someone who already has a profile to the "complete your profile" form.
+  if (profileError && allow !== 'guest') return <ProfileLoadError />
+
   if (!profileComplete && location.pathname !== '/me') {
     return <Navigate to={`/me?welcome=1&next=${encodeURIComponent(here)}`} replace />
   }
@@ -37,6 +42,28 @@ export function RequireAuth({
   if (allow === 'member' && !isMember) return <MembersOnly />
 
   return <>{children}</>
+}
+
+function ProfileLoadError() {
+  const { refreshProfile } = useAuth()
+  const { t } = useLanguage()
+  const [busy, setBusy] = useState(false)
+
+  async function retry() {
+    setBusy(true)
+    await refreshProfile()
+    setBusy(false)
+  }
+
+  return (
+    <div className="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface p-8 text-center">
+      <p className="text-lg font-bold">{t('auth.profileLoadFailed')}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{t('auth.profileLoadFailedHint')}</p>
+      <button type="button" onClick={retry} disabled={busy} className={`${buttonPrimary} mt-5`}>
+        {busy ? t('auth.retrying') : t('auth.tryAgain')}
+      </button>
+    </div>
+  )
 }
 
 export function MembersOnly({ compact = false }: { compact?: boolean }) {
