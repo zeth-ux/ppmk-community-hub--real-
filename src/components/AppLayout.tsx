@@ -77,7 +77,7 @@ export default function AppLayout() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 lg:gap-5">
-            <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="PPMK Community Hub, home">
+            <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('nav.brandHome')}>
               <LogoMark size={36} />
               <div className="leading-none">
                 <p className="font-display text-[22px] leading-none">
@@ -281,14 +281,14 @@ function SiteFooter() {
     <footer className="border-t border-slate-200 pb-24 lg:pb-0">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
-          <Link to="/" className="inline-flex items-center gap-2.5" aria-label="PPMK Community Hub, home">
+          <Link to="/" className="inline-flex items-center gap-2.5" aria-label={t('nav.brandHome')}>
             <LogoMark size={32} />
             <span className="font-display text-2xl">
               PPMK<span className="text-gold">.</span>hub
             </span>
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-6 text-slate-600">
-            Jauh di mata, dekat di hati. Built by Malaysian students at Hanyang ERICA, for Malaysians across Korea.
+            Jauh di mata, dekat di hati. {t('footer.builtBy')}
           </p>
           {isConfigured(CONTACT_EMAIL) && (
             <a href={`mailto:${CONTACT_EMAIL}`} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">

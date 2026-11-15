@@ -13,12 +13,12 @@ import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { deleteEvent, listAttendees, setCheckIn } from '../../lib/api'
 import {
-  STATUS_LABEL,
   STATUS_STYLE,
   eventTimeRange,
   formatDate,
   friendlyError,
   rsvpDeadline,
+  statusLabel,
   todayKst,
 } from '../../lib/format'
 import type { Attendee, HubEvent, RsvpStatus } from '../../lib/types'
@@ -36,7 +36,7 @@ function toCsv(event: HubEvent, rows: Attendee[]): string {
   ]
   const body = rows.map((a) => [
     a.full_name, a.student_id, a.batch, a.course, a.residence, a.phone, a.email,
-    STATUS_LABEL[a.status], a.comment,
+    statusLabel(a.status), a.comment,
     new Date(a.responded_at).toLocaleString('en-GB', { timeZone: 'Asia/Seoul' }),
     a.checked_in_at
       ? new Date(a.checked_in_at).toLocaleString('en-GB', { timeZone: 'Asia/Seoul' })
@@ -228,7 +228,7 @@ export default function EventManagePanel({
                   filter === f ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                {f === 'all' ? 'All' : STATUS_LABEL[f]} ({counts[f]})
+                {f === 'all' ? 'All' : statusLabel(f)} ({counts[f]})
               </button>
             ))}
           </div>
@@ -272,7 +272,7 @@ export default function EventManagePanel({
                     </td>
                     <td className="px-3 py-3">
                       <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[a.status]}`}>
-                        {STATUS_LABEL[a.status]}
+                        {statusLabel(a.status)}
                       </span>
                     </td>
                     <td className="max-w-[200px] px-3 py-3 text-slate-500">{a.comment}</td>

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   deleteOrgCalendarItem,
   deleteOrgPerson,
@@ -52,32 +52,17 @@ const SPONSOR_SITES: Record<string, string> = {
   JPA: 'https://www.jpa.gov.my',
 }
 
-const FAQ: [string, string][] = [
-  [
-    'Who is PPMK for?',
-    'Every Malaysian student studying in Korea, at any university, sponsored or self-funded. Friends and visitors can still use the public parts of the hub.',
-  ],
-  [
-    'Who do I contact about my scholarship or allowance?',
-    'Your sponsor’s officer (MARA, JPA or others) listed on this page. PPMK can help you find the right person, but only your sponsor can decide on scholarship matters.',
-  ],
-  [
-    'Who can see my phone number and student ID?',
-    'Only the organizers of events you RSVP to and hub admins. Everyone else only sees your @username. You can delete your account and data at any time from your profile.',
-  ],
-  [
-    'Why can’t I see the committee’s phone numbers?',
-    'Contact details are shown only to signed-in PPMK members, so personal numbers aren’t copied from a public page. Sign in and finish your member profile to see them.',
-  ],
-  [
-    'How do I start a club?',
-    'Get at least 5 founding members and prepare a short constitution, member list, activity plan and committee list. Then apply under Clubs → Start a club. An admin replies, usually within a week.',
-  ],
+const FAQ: [TranslationKey, TranslationKey][] = [
+  ['faq.q1', 'faq.a1'],
+  ['faq.q2', 'faq.a2'],
+  ['faq.q3', 'faq.a3'],
+  ['faq.q4', 'faq.a4'],
+  ['faq.q5', 'faq.a5'],
 ]
 
 export default function PpmkPage() {
-  usePageMeta('PPMK', 'Persatuan Pelajar Malaysia Korea: the High Committee, the PPMK calendar, and MARA and JPA contacts.')
   const { t } = useLanguage()
+  usePageMeta('PPMK', t('ppmk.meta'))
   const { session, isMember, isAdmin } = useAuth()
   const { data, loading, error, reload } = useLoader(async () => {
     const [people, calendar] = await Promise.all([listOrgPeople(), listOrgCalendar()])
@@ -142,7 +127,7 @@ export default function PpmkPage() {
           <div>
             <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.highCommittee')}</h2>
             <p className="mt-2 text-slate-600">
-              Majlis Tertinggi PPMK{session_ ? `, session ${session_}` : ''}.
+              Majlis Tertinggi PPMK{session_ ? t('ppmk.sessionSuffix').replace('{session}', session_) : '.'}
             </p>
           </div>
         </div>
@@ -191,7 +176,7 @@ export default function PpmkPage() {
                     )}
                   </div>
                   {officers.length === 0 ? (
-                    <p className="mt-3 text-sm text-slate-500">The officer in charge will be listed here soon.</p>
+                    <p className="mt-3 text-sm text-slate-500">{t('ppmk.officerSoon')}</p>
                   ) : (
                     <ul>
                       {officers.map((p) => (
@@ -207,7 +192,7 @@ export default function PpmkPage() {
         )}
         {editing && (
           <p className="mt-3 text-sm text-slate-500">
-            Another sponsor (e.g. Yayasan, Petronas)? Add an officer under MARA or JPA, then change the sponsor name in its form.
+            {t('ppmk.otherSponsorHint')}
           </p>
         )}
       </section>
@@ -216,21 +201,21 @@ export default function PpmkPage() {
       <section id="faq" className="scroll-mt-24 border-t border-slate-200 pt-10">
         <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.questions')}</h2>
         <div className="mt-6 max-w-3xl divide-y divide-slate-200 border-y border-slate-200">
-          {FAQ.map(([q, a]) => (
-            <details key={q} className="group py-4">
+          {FAQ.map(([qKey, aKey]) => (
+            <details key={qKey} className="group py-4">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold [&::-webkit-details-marker]:hidden">
-                {q}
+                {t(qKey)}
                 <Plus size={20} className="shrink-0 text-slate-400 transition group-open:rotate-45" />
               </summary>
-              <p className="mt-3 max-w-prose leading-7 text-slate-600">{a}</p>
+              <p className="mt-3 max-w-prose leading-7 text-slate-600">{t(aKey)}</p>
             </details>
           ))}
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link to={session ? '/clubs/apply' : '/login?next=/clubs/apply'} className={buttonSecondary}>
-            <Plus size={16} /> Start a club under PPMK
+            <Plus size={16} /> {t('ppmk.startClub')}
           </Link>
-          <Link to="/explore" className={buttonSecondary}>Opportunities beyond PPMK</Link>
+          <Link to="/explore" className={buttonSecondary}>{t('ppmk.beyond')}</Link>
         </div>
       </section>
     </div>
@@ -238,12 +223,13 @@ export default function PpmkPage() {
 }
 
 function MembersOnlyNote({ signedIn }: { signedIn: boolean }) {
+  const { t } = useLanguage()
   return (
     <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
       <Lock size={14} className="text-slate-400" />
-      Phone numbers and emails are shown to PPMK members.{' '}
+      {t('ppmk.contactsNote')}{' '}
       <Link to={signedIn ? '/me?become=member' : '/login?next=/ppmk'} className="font-semibold text-primary hover:underline">
-        {signedIn ? 'Switch to a member profile' : 'Sign in'}
+        {signedIn ? t('guards.switchToMember') : t('nav.signIn')}
       </Link>
     </p>
   )
@@ -719,6 +705,7 @@ function CalendarSection({
   editing: boolean
   onChange: () => Promise<void>
 }) {
+  const { t } = useLanguage()
   const today = todayKst()
   const [showPast, setShowPast] = useState(false)
   const [editingItem, setEditingItem] = useState<OrgCalendarItem | 'new' | null>(null)
@@ -742,14 +729,14 @@ function CalendarSection({
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-4xl sm:text-5xl">PPMK Calendar</h2>
-          <p className="mt-2 text-slate-600">Key dates for Malaysian students across Korea.</p>
+          <h2 className="font-display text-4xl sm:text-5xl">{t('ppmk.calendarTitle')}</h2>
+          <p className="mt-2 text-slate-600">{t('ppmk.calendarIntro')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <div className="inline-flex rounded-[10px] border border-slate-200 p-1" role="group" aria-label="Which dates">
+          <div className="inline-flex rounded-[10px] border border-slate-200 p-1" role="group" aria-label={t('ppmk.whichDates')}>
             {[
-              [false, `Upcoming (${upcoming.length})`],
-              [true, `Past (${past.length})`],
+              [false, t('ppmk.upcomingN').replace('{n}', String(upcoming.length))],
+              [true, t('ppmk.pastN').replace('{n}', String(past.length))],
             ].map(([value, label]) => (
               <button
                 key={String(value)}
@@ -763,7 +750,7 @@ function CalendarSection({
           </div>
           {upcoming.length > 0 && (
             <button onClick={() => downloadIcs(upcoming, 'ppmk-calendar.ics')} className={buttonSecondary}>
-              <CalendarPlus size={16} /> Add all to my calendar
+              <CalendarPlus size={16} /> {t('ppmk.addAll')}
             </button>
           )}
         </div>
@@ -771,7 +758,7 @@ function CalendarSection({
 
       {editing && editingItem === null && (
         <button onClick={() => setEditingItem('new')} className={`${buttonSecondary} mt-5`}>
-          <Plus size={15} /> Add a date
+          <Plus size={15} /> {t('ppmk.addDate')}
         </button>
       )}
       {editing && editingItem && (
@@ -822,12 +809,12 @@ function CalendarSection({
                         <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold">
                           {!showPast && (
                             <button onClick={() => downloadIcs([i], `${i.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.ics`)} className="inline-flex items-center gap-1 text-primary hover:underline">
-                              <CalendarPlus size={14} /> Add to calendar
+                              <CalendarPlus size={14} /> {t('ppmk.addToCalendar')}
                             </button>
                           )}
                           {i.url && (
                             <a href={i.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
-                              Details <ExternalLink size={13} />
+                              {t('ppmk.details')} <ExternalLink size={13} />
                             </a>
                           )}
                         </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowBigDown, ArrowBigUp, CalendarClock, EyeOff, MapPin, Users, Wallet } from 'lucide-react'
 
+import { useLanguage } from '../context/LanguageContext'
 import { deadlineLabel, mapLinks } from '../lib/format'
 
 import { voteForumPost } from '../lib/api'
@@ -20,6 +21,7 @@ export function VoteButtons({
   /** Signed-out readers are sent to sign in when they try to vote. */
   signedIn?: boolean
 }) {
+  const { t } = useLanguage()
   const [state, setState] = useState({ score: post.score, mine: post.my_vote })
   const navigate = useNavigate()
   const location = useLocation()
@@ -48,7 +50,7 @@ export function VoteButtons({
     <div className={`flex items-center ${layout === 'vertical' ? 'flex-col' : 'gap-1 rounded-full bg-slate-100 px-1'}`}>
       <button
         onClick={(e) => void vote(e, 1)}
-        aria-label="Upvote"
+        aria-label={t('forum.upvote')}
         aria-pressed={state.mine === 1}
         className={`rounded-md p-1 transition hover:bg-red-50 ${state.mine === 1 ? 'text-primary' : 'text-slate-400 hover:text-primary'}`}
       >
@@ -59,7 +61,7 @@ export function VoteButtons({
       </span>
       <button
         onClick={(e) => void vote(e, -1)}
-        aria-label="Downvote"
+        aria-label={t('forum.downvote')}
         aria-pressed={state.mine === -1}
         className={`rounded-md p-1 transition hover:bg-indigo-50 ${state.mine === -1 ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
       >
@@ -70,17 +72,18 @@ export function VoteButtons({
 }
 
 export function AuthorTag({ username, anonymous, isOp, isMine }: { username: string | null; anonymous: boolean; isOp?: boolean; isMine?: boolean }) {
+  const { t } = useLanguage()
   return (
     <span className="inline-flex items-center gap-1">
       {anonymous ? (
         <span className="inline-flex items-center gap-1 font-semibold text-slate-600">
-          <EyeOff size={12} /> Anonymous
+          <EyeOff size={12} /> {t('forum.anonymous')}
         </span>
       ) : (
         <span className="font-semibold text-slate-700">@{username ?? 'deleted'}</span>
       )}
       {isOp && <span className="rounded bg-red-50 px-1 text-[10px] font-bold text-primary">OP</span>}
-      {isMine && <span className="text-slate-400">(you)</span>}
+      {isMine && <span className="text-slate-400">{t('forum.you')}</span>}
     </span>
   )
 }
@@ -121,9 +124,10 @@ export function AnonymousToggle({
   onChange: (v: boolean) => void
   username: string | null
 }) {
+  const { t } = useLanguage()
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-slate-500">Post as</span>
+      <span className="text-slate-500">{t('forum.postAs')}</span>
       <div className="inline-flex rounded-full bg-slate-100 p-1">
         <button
           type="button"
@@ -137,7 +141,7 @@ export function AnonymousToggle({
           onClick={() => onChange(true)}
           className={`inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold transition ${value ? 'bg-ink text-on-ink shadow' : 'text-slate-500'}`}
         >
-          <EyeOff size={13} /> Anonymous
+          <EyeOff size={13} /> {t('forum.anonymous')}
         </button>
       </div>
     </div>
@@ -155,6 +159,7 @@ export function CostBadge({ cost }: { cost: string | null }) {
 
 /** Team up summary: roles wanted, deadline, open/full. */
 export function TeamUpInfo({ post, compact = false }: { post: Pick<ForumPost, 'looking_for' | 'deadline' | 'is_closed'>; compact?: boolean }) {
+  const { t } = useLanguage() // also re-renders the deadline text when the language changes
   const due = deadlineLabel(post.deadline)
   const roles = (post.looking_for ?? '').split(/[,;\n]/).map((r) => r.trim()).filter(Boolean)
   return (
@@ -164,7 +169,7 @@ export function TeamUpInfo({ post, compact = false }: { post: Pick<ForumPost, 'l
           post.is_closed || due?.past ? 'bg-slate-200 text-slate-600' : 'bg-green-100 text-green-800'
         }`}
       >
-        {post.is_closed ? 'Team full' : due?.past ? 'Closed' : 'Open'}
+        {post.is_closed ? t('forum.teamFull') : due?.past ? t('forum.closed') : t('forum.open')}
       </span>
       {roles.length > 0 && (
         <span className="inline-flex flex-wrap items-center gap-1 text-xs text-indigo-900">

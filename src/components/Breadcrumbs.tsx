@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
+import { useLanguage } from '../context/LanguageContext'
+
 /** "Home › Clubs › EMSU Badminton". The last item is the current page. */
 export default function Breadcrumbs({ items }: { items: [label: string, to?: string][] }) {
-  const all: [string, string?][] = [['Home', '/'], ...items]
+  const { t } = useLanguage()
+  const all: [string, string?][] = [[t('nav.home'), '/'], ...items]
   return (
-    <nav aria-label="Breadcrumb" className="min-w-0">
+    <nav aria-label={t('breadcrumb.label')} className="min-w-0">
       <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
         {all.map(([label, to], i) => {
           const last = i === all.length - 1

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 
+import { useLanguage } from '../context/LanguageContext'
 import { listEvents, listMyRsvps } from '../lib/api'
 import { isPast } from '../lib/format'
 import { useLoader } from '../lib/useLoader'
@@ -9,11 +10,12 @@ import { ErrorBox, Spinner } from './ui'
 /** Upcoming events the user said "Going" or "Maybe" to. */
 export default function MyRsvpsList({
   userId,
-  title = 'My upcoming events',
+  title,
 }: {
   userId: string
   title?: string
 }) {
+  const { t } = useLanguage()
   const { data, loading, error } = useLoader(async () => {
     const [events, rsvps] = await Promise.all([listEvents(), listMyRsvps(userId)])
     const byEvent = new Map(rsvps.map((r) => [r.event_id, r.status]))
@@ -29,7 +31,7 @@ export default function MyRsvpsList({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-bold">{title}</h2>
+      <h2 className="text-lg font-bold">{title ?? t('myRsvps.title')}</h2>
 
       {loading ? (
         <Spinner />
@@ -43,9 +45,9 @@ export default function MyRsvpsList({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-surface p-6 text-center text-sm text-slate-500">
-          You haven't joined any upcoming events yet.{' '}
+          {t('myRsvps.empty')}{' '}
           <Link to="/events" className="font-semibold text-primary">
-            Browse events
+            {t('myRsvps.browse')}
           </Link>
         </div>
       )}

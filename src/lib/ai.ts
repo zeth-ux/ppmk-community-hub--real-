@@ -1,5 +1,6 @@
 // Browser side of the AI features. Talks only to our own /api/ai endpoint;
 // the Gemini key never reaches the browser.
+import { translateNow } from '../context/LanguageContext'
 import { supabase } from './supabase'
 import type { Announcements, EventCategory } from './types'
 
@@ -35,7 +36,7 @@ export type AiAnnounceResult = {
 async function callAi<T>(body: Record<string, unknown>): Promise<T> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
-  if (!token) throw new Error('Please sign in again.')
+  if (!token) throw new Error(translateNow('err.signInAgain'))
 
   let res: Response
   try {
@@ -45,12 +46,12 @@ async function callAi<T>(body: Record<string, unknown>): Promise<T> {
       body: JSON.stringify(body),
     })
   } catch {
-    throw new Error('Could not reach the server. Check your internet connection.')
+    throw new Error(translateNow('err.network'))
   }
 
   const payload = (await res.json().catch(() => null)) as (T & { error?: string }) | null
   if (!res.ok || !payload) {
-    throw new Error(payload?.error ?? `The AI is not available right now (error ${res.status}).`)
+    throw new Error(payload?.error ?? translateNow('err.aiUnavailable').replace('{status}', String(res.status)))
   }
   return payload
 }

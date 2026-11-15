@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Clock, ImagePlus, ShieldCheck, Trash2, X, XCircle } from 'lucide-react'
 
+import { useLanguage } from '../context/LanguageContext'
 import { MAX_PHOTOS_PER_POST } from '../lib/images'
 import type { Photo } from '../lib/types'
 
@@ -9,13 +10,14 @@ export function PhotoPicker({
   files,
   onChange,
   max = MAX_PHOTOS_PER_POST,
-  label = 'Add photos',
+  label,
 }: {
   files: File[]
   onChange: (files: File[]) => void
   max?: number
   label?: string
 }) {
+  const { t } = useLanguage()
   const input = useRef<HTMLInputElement>(null)
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews])
@@ -25,11 +27,11 @@ export function PhotoPicker({
       <div className="flex flex-wrap gap-2">
         {previews.map((url, i) => (
           <div key={url} className="relative h-20 w-20 overflow-hidden rounded-xl bg-slate-100 sm:h-24 sm:w-24">
-            <img src={url} alt={`Selected photo ${i + 1}`} className="h-full w-full object-cover" />
+            <img src={url} alt={t('photos.selected').replace('{n}', String(i + 1))} className="h-full w-full object-cover" />
             <button
               type="button"
               onClick={() => onChange(files.filter((_, j) => j !== i))}
-              aria-label="Remove photo"
+              aria-label={t('photos.remove')}
               className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
             >
               <X size={13} />
@@ -43,7 +45,7 @@ export function PhotoPicker({
             className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-500 transition hover:border-primary hover:text-primary sm:h-24 sm:w-24"
           >
             <ImagePlus size={20} />
-            {files.length === 0 ? label : 'More'}
+            {files.length === 0 ? (label ?? t('photos.add')) : t('photos.more')}
           </button>
         )}
       </div>
@@ -61,8 +63,7 @@ export function PhotoPicker({
       />
       <p className="flex items-start gap-1.5 text-xs leading-5 text-slate-500">
         <ShieldCheck size={14} className="mt-0.5 shrink-0 text-green-600" />
-        Up to {max} photos. An admin checks every photo before others can see it, usually within a day. Please don't
-        post photos of people without asking them.
+        {t('photos.rules').replace('{max}', String(max))}
       </p>
     </div>
   )
@@ -85,6 +86,7 @@ export function PhotoGallery({
   onDelete?: (photo: Photo) => void
   size?: 'md' | 'lg'
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState<number | null>(null)
   if (photos.length === 0) return null
 
@@ -107,31 +109,31 @@ export function PhotoGallery({
                 type="button"
                 onClick={() => p.status === 'approved' && setOpen(approved.indexOf(p))}
                 className="h-full w-full"
-                aria-label="Open photo"
+                aria-label={t('photos.open')}
               >
                 <img
                   src={p.url}
-                  alt={p.caption || (p.status === 'approved' ? 'Shared photo' : 'Your photo, waiting for approval')}
+                  alt={p.caption || (p.status === 'approved' ? t('photos.shared') : t('photos.waitingAlt'))}
                   loading="lazy"
                   className={`h-full w-full object-cover transition ${p.status !== 'approved' ? 'opacity-50 blur-[1px]' : 'group-hover:scale-[1.02]'}`}
                 />
               </button>
               {p.status === 'pending' && (
                 <span className="absolute inset-x-2 bottom-2 flex items-center justify-center gap-1 rounded-lg bg-surface/95 px-2 py-1 text-[11px] font-bold text-amber-700 ">
-                  <Clock size={12} /> Waiting for admin approval
+                  <Clock size={12} /> {t('photos.waiting')}
                 </span>
               )}
               {p.status === 'rejected' && (
                 <span className="absolute inset-x-2 bottom-2 rounded-lg bg-surface/95 px-2 py-1 text-center text-[11px] font-bold text-red-700 ">
                   <XCircle size={12} className="mr-1 inline" />
-                  Not approved{p.reject_reason ? `: ${p.reject_reason}` : ''}
+                  {t('photos.notApproved')}{p.reject_reason ? `: ${p.reject_reason}` : ''}
                 </span>
               )}
               {(mine || canManage) && onDelete && (
                 <button
                   type="button"
-                  onClick={() => window.confirm('Delete this photo?') && onDelete(p)}
-                  aria-label="Delete photo"
+                  onClick={() => window.confirm(t('photos.deleteConfirm')) && onDelete(p)}
+                  aria-label={t('photos.delete')}
                   className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white opacity-90 hover:bg-black/80 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 size={14} />
@@ -159,6 +161,7 @@ function Lightbox({
   onIndex: (i: number) => void
   onClose: () => void
 }) {
+  const { t } = useLanguage()
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -176,8 +179,8 @@ function Lightbox({
 
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4" onClick={onClose}>
-      <img src={photos[index].url} alt={photos[index].caption || `Photo ${index + 1} of ${photos.length}`} className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
-      <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white hover:bg-white/25">
+      <img src={photos[index].url} alt={photos[index].caption || t('photos.xOfY').replace('{n}', String(index + 1)).replace('{total}', String(photos.length))} className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+      <button onClick={onClose} aria-label={t('photos.close')} className="absolute right-4 top-4 rounded-full bg-white/15 p-2 text-white hover:bg-white/25">
         <X size={22} />
       </button>
       {photos.length > 1 && (
@@ -187,7 +190,7 @@ function Lightbox({
               e.stopPropagation()
               onIndex((index - 1 + photos.length) % photos.length)
             }}
-            aria-label="Previous photo"
+            aria-label={t('photos.previous')}
             className="absolute left-3 rounded-full bg-white/15 p-2 text-white hover:bg-white/25"
           >
             <ChevronLeft size={26} />
@@ -197,7 +200,7 @@ function Lightbox({
               e.stopPropagation()
               onIndex((index + 1) % photos.length)
             }}
-            aria-label="Next photo"
+            aria-label={t('photos.next')}
             className="absolute right-3 rounded-full bg-white/15 p-2 text-white hover:bg-white/25"
           >
             <ChevronRight size={26} />
