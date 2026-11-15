@@ -91,7 +91,35 @@ export async function setEmailReminders(userId: string, on: boolean): Promise<Pr
   return must(result) as Profile
 }
 
+/**
+ * "Delete my data": removes the account and everything tied to it.
+ *
+ * The database deletes the profile, RSVPs, posts and photo records, but it
+ * cannot delete the photo FILES in Storage (Supabase blocks that from SQL),
+ * so they are removed here first. Order matters: the last-admin rule is
+ * checked before any file is touched, and if a file cannot be removed the
+ * account is kept so the person can simply try again.
+ */
 export async function deleteMyAccount(): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const userId = sessionData.session?.user.id
+  if (!userId) throw new Error('NOT_SIGNED_IN')
+
+  // The only admin cannot delete themselves (the database enforces this too).
+  const me = must(await supabase.from('profiles').select('role').eq('id', userId).maybeSingle()) as { role: AppRole } | null
+  if (me?.role === 'admin') {
+    const admins = must(await supabase.from('profiles').select('id').eq('role', 'admin')) as { id: string }[]
+    if (admins.length <= 1) throw new Error('LAST_ADMIN')
+  }
+
+  // Every photo this person uploaded (pending, approved or rejected).
+  const photos = must(await supabase.from('photos').select('path').eq('uploaded_by', userId)) as { path: string }[]
+  const paths = photos.map((p) => p.path)
+  for (let i = 0; i < paths.length; i += 100) {
+    const { error } = await supabase.storage.from('photos').remove(paths.slice(i, i + 100))
+    if (error) throw error
+  }
+
   must(await supabase.rpc('delete_my_account'))
 }
 
@@ -284,9 +312,14 @@ export async function getFeedbackOverview(): Promise<FeedbackOverview> {
   }
 }
 
-/** Organizers: a scanned QR code → check that person in. */
-export async function checkInByCode(code: string): Promise<CheckInResult> {
-  const rows = must(await supabase.rpc('check_in_by_code', { p_code: code })) as CheckInResult[]
+/**
+ * Organizers: a scanned QR code → check that person in.
+ * If something looks wrong (another day, RSVP not "Going") nothing is saved
+ * and `problems` says why; call again with `force` once the organizer confirms.
+ */
+export async function checkInByCode(code: string, force = false): Promise<CheckInResult> {
+  const args = force ? { p_code: code, p_force: true } : { p_code: code }
+  const rows = must(await supabase.rpc('check_in_by_code', args)) as CheckInResult[]
   return rows[0]
 }
 

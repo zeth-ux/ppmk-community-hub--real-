@@ -136,6 +136,8 @@ export function friendlyError(error: unknown): string {
     return "This QR code isn't valid. The RSVP may have been removed."
   if (message.includes('LAST_ADMIN'))
     return 'You are the only admin. Make someone else an admin first.'
+  if (message.includes('NOT_EVENT_ORGANIZER'))
+    return 'Only the organizer who created this event (or an admin) can check people in.'
   if (message.includes('NOT_ALLOWED'))
     return "You don't have permission to do that."
   if (message.includes('profiles_username_key'))

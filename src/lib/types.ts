@@ -540,7 +540,14 @@ export type CheckInResult = {
   student_id: string | null
   batch: number | null
   status: RsvpStatus
-  checked_in_at: string
+  /** When they were checked in; null if this scan was flagged and not saved yet. */
+  checked_in_at: string | null
   /** True if this QR was already scanned before (nothing changed). */
   already_checked_in: boolean
+  /** False when the scan was flagged (see `problems`) and nothing was saved yet. */
+  checked_in: boolean
+  /** What looked wrong: another day, or the RSVP is not "Going". Empty = all fine. */
+  problems: CheckInProblem[]
 }
+
+export type CheckInProblem = 'NOT_TODAY' | 'NOT_GOING'
