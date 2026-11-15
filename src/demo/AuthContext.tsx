@@ -15,6 +15,7 @@ type AuthContextValue = {
   session: Session | null
   profile: Profile | null
   profileComplete: boolean
+  profileError: boolean
   isMember: boolean
   isVisitor: boolean
   isOrganizer: boolean
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session: signedIn ? (demoSession as unknown as Session) : null,
       profile: signedIn ? profile : null,
       profileComplete: signedIn,
+      profileError: false,
       isMember: signedIn && role !== 'visitor',
       isVisitor: signedIn && role === 'visitor',
       isOrganizer: signedIn && (role === 'organizer' || role === 'admin'),
