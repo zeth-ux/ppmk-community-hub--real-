@@ -21,6 +21,11 @@ import type {
   ForumPost,
   ForumPostInput,
   ForumSort,
+  MarketInterest,
+  MarketListing,
+  MarketListingInput,
+  MarketReport,
+  MarketStatus,
   Opportunity,
   OpportunityInput,
   OrgCalendarInput,
@@ -55,6 +60,9 @@ import {
   demoClubs,
   demoForumComments,
   demoForumPosts,
+  demoListingInterests,
+  demoListings,
+  demoMarketReports,
   demoOpportunities,
   demoOrgCalendar,
   demoOrgPeople,
@@ -702,6 +710,111 @@ export async function getPublicStats(): Promise<PublicStats | null> {
   return wait({ members: 68, clubs: demoClubs.filter((c) => c.status === 'active').length, events_this_year: 24 })
 }
 
+// ---------- Market & Pass the Book ----------
+
+const SIXTY_DAYS = 60 * 86400 * 1000
+
+export async function listMarketListings(): Promise<MarketListing[]> {
+  if (demoAccess.level !== 'member') throw new Error('MEMBERS_ONLY')
+  const admin = isAdminNow()
+  return wait(
+    demoListings
+      .map((l) => {
+        const { seller_id, contact, ...rest } = l
+        const isMine = seller_id === DEMO_USER_ID
+        const asked = demoListingInterests.some((i) => i.listing_id === l.id && i.buyer_id === DEMO_USER_ID)
+        const expired = Date.now() - new Date(l.bumped_at).getTime() > SIXTY_DAYS
+        return {
+          ...rest,
+          is_mine: isMine,
+          i_asked: asked,
+          contact: isMine || asked || admin ? contact : null,
+          interest_count: isMine || admin ? demoListingInterests.filter((i) => i.listing_id === l.id).length : null,
+          expired,
+          visible: isMine || asked || admin || (l.status !== 'done' && !expired),
+        }
+      })
+      .filter((l) => l.visible)
+      .map(({ visible, ...l }) => (void visible, l))
+      .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || b.bumped_at.localeCompare(a.bumped_at)),
+  )
+}
+
+export async function saveMarketListing(input: MarketListingInput, id?: string): Promise<string> {
+  if (id) {
+    const l = demoListings.find((x) => x.id === id)
+    if (l) Object.assign(l, input)
+    return wait(id)
+  }
+  const newListing = {
+    ...input, id: newId('mk'), seller_id: DEMO_USER_ID, seller_username: demoProfile.username,
+    status: 'available' as const, bumped_at: stamp(), created_at: stamp(),
+  }
+  demoListings.unshift(newListing)
+  return wait(newListing.id)
+}
+
+export async function setMarketListingStatus(id: string, status: MarketStatus): Promise<void> {
+  const l = demoListings.find((x) => x.id === id)
+  if (l) l.status = status
+  await wait(null)
+}
+
+export async function renewMarketListing(id: string): Promise<void> {
+  const l = demoListings.find((x) => x.id === id)
+  if (l) l.bumped_at = stamp()
+  await wait(null)
+}
+
+export async function deleteMarketListing(id: string): Promise<void> {
+  const i = demoListings.findIndex((x) => x.id === id)
+  if (i >= 0) demoListings.splice(i, 1)
+  await wait(null)
+}
+
+export async function askMarketContact(id: string, message = ''): Promise<string> {
+  const l = demoListings.find((x) => x.id === id)
+  if (!l) throw new Error('LISTING_NOT_FOUND')
+  if (!demoListingInterests.some((i) => i.listing_id === id && i.buyer_id === DEMO_USER_ID)) {
+    demoListingInterests.push({ listing_id: id, buyer_id: DEMO_USER_ID, message: message.trim(), created_at: stamp() })
+  }
+  return wait(l.contact, 300)
+}
+
+export async function withdrawMarketInterest(id: string, _userId: string): Promise<void> {
+  void _userId
+  const i = demoListingInterests.findIndex((x) => x.listing_id === id && x.buyer_id === DEMO_USER_ID)
+  if (i >= 0) demoListingInterests.splice(i, 1)
+  await wait(null)
+}
+
+export async function listMarketInterests(id: string): Promise<MarketInterest[]> {
+  return wait(
+    demoListingInterests
+      .filter((i) => i.listing_id === id)
+      .map((i) => {
+        const p = demoMembers.find((m) => m.id === i.buyer_id)
+        return { username: p?.username ?? null, full_name: p?.full_name ?? null, batch: p?.batch ?? null, course: p?.course ?? null, message: i.message, created_at: i.created_at }
+      }),
+  )
+}
+
+export async function reportMarketListing(id: string, reason: string): Promise<void> {
+  const l = demoListings.find((x) => x.id === id)
+  demoMarketReports.unshift({ id: newId('mr'), listing_id: id, reason, created_at: stamp(), listing_title: l?.title ?? '' })
+  await wait(null)
+}
+
+export async function listMarketReports(): Promise<MarketReport[]> {
+  return wait(isAdminNow() ? [...demoMarketReports] : [])
+}
+
+export async function dismissMarketReport(id: string): Promise<void> {
+  const i = demoMarketReports.findIndex((r) => r.id === id)
+  if (i >= 0) demoMarketReports.splice(i, 1)
+  await wait(null)
+}
+
 // ---------- Photos ----------
 
 function photoVisible(p: Photo) {
@@ -725,6 +838,7 @@ export async function uploadPhotos(target: PhotoTarget, files: File[], _userId: 
     demoPhotos.push({
       id: newId('ph'), path: url, url, uploaded_by: DEMO_USER_ID,
       forum_post_id: target.forum_post_id ?? null, club_post_id: target.club_post_id ?? null, club_id: target.club_id ?? null,
+      listing_id: target.listing_id ?? null,
       caption: '', status: 'pending', reject_reason: '', created_at: stamp(),
     })
   }
@@ -746,6 +860,9 @@ export async function listPendingPhotos(): Promise<Photo[]> {
         if (p.forum_post_id) {
           const post = demoForumPosts.find((x) => x.id === p.forum_post_id)
           return { ...p, context: { label: `Discussion: “${post?.title ?? 'post'}”`, href: `/discuss/${p.forum_post_id}` } }
+        }
+        if (p.listing_id) {
+          return { ...p, context: { label: 'Market listing', href: `/explore?tab=market&item=${p.listing_id}` } }
         }
         if (p.club_id) {
           return { ...p, context: { label: `${demoClubs.find((c) => c.id === p.club_id)?.name} · club photos`, href: `/clubs/${p.club_id}?tab=about` } }
