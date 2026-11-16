@@ -729,5 +729,138 @@ run("select mark_reminded(%s, %s, %s)", None, role="anon", args=(SECRET, ER_TMR,
 after = run("select updated_at from rsvps where event_id=%s and user_id=%s", role=None, args=(ER_TMR, R2))[0][0]
 check("reminding doesn't change the RSVP's 'responded at' time", before == after, (before, after))
 
+# ---------- 0011: Market & Pass the Book ----------
+K1 = new_user("seller@x.com"); K2 = new_user("buyer@x.com"); K3 = new_user("other@x.com")
+for u, sid, name in [(K1, "2022501", "senior_k"), (K2, "2026501", "junior_k"), (K3, "2025501", "other_k")]:
+    complete(u, sid, 2022)
+    run("update profiles set username=%s where id=auth.uid()", u, args=(name,))
+
+li = """insert into market_listings (kind, category, title, price_krw, contact, course, subject_code, for_year)
+        values (%s, %s, %s, %s, %s, %s, %s, %s) returning id"""
+r = run(li, T, args=("sell", "kitchen", "Rice cooker", 20000, "kakao: tourist1", None, None, None))
+check("visitor cannot list items", is_err(r), r)
+r = run(li, S3, args=("sell", "kitchen", "Rice cooker", 20000, "kakao: s3", None, None, None))
+check("incomplete profile cannot list items", is_err(r), r)
+r = run(li, K1, args=("free", "kitchen", "Free kettle", 5000, "kakao: senior_k", None, None, None))
+check("free item cannot have a price", is_err(r, "market_listings_price"), r)
+r = run(li, K1, args=("sell", "kitchen", "Kettle", None, "kakao: senior_k", None, None, None))
+check("item for sale needs a price", is_err(r, "market_listings_price"), r)
+r = run(li, K1, args=("sell", "kitchen", "Pot", 1000, "kakao: senior_k", "Mechanical Eng", None, None))
+check("course fields only on textbooks", is_err(r, "market_listings_book_fields"), r)
+L1 = run(li, K1, args=("sell", "electronics", "Heater, 2 winters old", 25000, "kakao: senior_k", None, None, None))[0][0]
+L2 = run(li, K1, args=("free", "textbook", "Engineering Mathematics 2", None, "https://open.kakao.com/o/abc", "Mechanical Engineering", "MAT2001", 1))[0][0]
+check("member lists an item and a textbook", bool(L1 and L2))
+r = run("insert into market_listings (title, price_krw, contact, seller_id) values ('Hack', 1, 'kakao x', %s) returning id", K2, args=(K1,))
+check("cannot list on someone else's behalf", is_err(r), r)
+r = run("insert into market_listings (kind, title, contact, status) values ('free', 'Sneaky done', 'kakao x', 'done')", K2)
+check("cannot set status on insert (column not granted)", is_err(r, "permission denied"), r)
+
+r = run("select id from market_listings", K2)
+check("table: buyer does not read others' rows directly (contacts stay hidden)", r == [], r)
+r = run("select title, contact from market_listings where id=%s", K1, args=(L1,))
+check("table: seller reads own row incl. contact", r == [("Heater, 2 winters old", "kakao: senior_k")], r)
+r = run("select count(*) from market_listings where seller_id=%s", A, args=(K1,))
+check("table: admin can read all listings", r == [(2,)], r)
+
+lst = "select title, seller_username, contact, is_mine, i_asked, interest_count from list_market_listings() where id=%s"
+r = run(lst, K2, args=(L1,))
+check("list: member sees listing with seller username, no contact, no count",
+      r == [("Heater, 2 winters old", "senior_k", None, False, False, None)], r)
+r = run(lst, K1, args=(L1,))
+check("list: seller sees own contact and interest count", r == [("Heater, 2 winters old", "senior_k", "kakao: senior_k", True, False, 0)], r)
+r = run("select * from list_market_listings()", T)
+check("list: visitor refused", is_err(r, "MEMBERS_ONLY"), r)
+r = run("select * from list_market_listings()", None, role="anon")
+check("list: signed-out refused", is_err(r, "permission denied"), r)
+
+r = run("select ask_market_contact(%s, 'Is it still available?')", T, args=(L1,))
+check("visitor cannot ask for contact", is_err(r, "MEMBERS_ONLY"), r)
+r = run("select ask_market_contact(%s, 'Is it still available?')", K2, args=(L1,))
+check("buyer presses 'I'm interested' and gets the contact", r == [("kakao: senior_k",)], r)
+r = run(lst, K2, args=(L1,))
+check("list: buyer now sees the contact", r == [("Heater, 2 winters old", "senior_k", "kakao: senior_k", False, True, None)], r)
+r = run(lst, K3, args=(L1,))
+check("list: other members still don't see the contact", r[0][2] is None, r)
+r = run("select ask_market_contact(%s, '')", K2, args=(L1,))
+check("asking twice is harmless", r == [("kakao: senior_k",)], r)
+r = run("select count(*) from market_interests", K2)
+check("buyer sees own request", r == [(1,)], r)
+r = run("select count(*) from market_interests", K1)
+check("seller cannot read the interests table directly", r == [(0,)], r)
+r = run("insert into market_interests (listing_id, buyer_id) values (%s, %s)", K3, args=(L1, K3))
+check("requests only through ask_market_contact", is_err(r, "permission denied"), r)
+
+r = run("select username, full_name, message from market_listing_interests(%s)", K1, args=(L1,))
+check("seller sees who asked and their message", r == [("junior_k", "Student 2026501", "Is it still available?")], r)
+r = run("select * from market_listing_interests(%s)", K2, args=(L1,))
+check("buyer cannot see who else asked", is_err(r, "NOT_ALLOWED"), r)
+r = run("select phone from market_listing_interests(%s)", K1, args=(L1,))
+check("seller never gets the buyer's phone", is_err(r, "phone"), r)
+
+r = run("update market_listings set status='reserved' where id=%s", K2, args=(L1,))
+check("buyer cannot change someone else's listing", r == 0, r)
+r = run("update market_listings set status='done' where id=%s", K1, args=(L1,))
+check("seller marks item as sold", r == 1, r)
+r = run("select count(*) from list_market_listings() where id=%s", K3, args=(L1,))
+check("sold item leaves the list for others", r == [(0,)], r)
+r = run("select count(*) from list_market_listings() where id=%s", K2, args=(L1,))
+check("the buyer who asked still sees it", r == [(1,)], r)
+r = run("select ask_market_contact(%s, 'me too')", K3, args=(L1,))
+check("cannot ask about a sold item", is_err(r, "LISTING_NOT_FOUND"), r)
+r = run("update market_listings set bumped_at=now() + interval '1 year' where id=%s", K1, args=(L2,))
+check("seller cannot fake a newer date", is_err(r, "permission denied"), r)
+
+# 60-day expiry and renew
+run("update market_listings set bumped_at=now() - interval '61 days' where id=%s", role=None, args=(L2,))
+r = run("select count(*) from list_market_listings() where id=%s", K3, args=(L2,))
+check("listing older than 60 days is hidden from others", r == [(0,)], r)
+r = run("select expired from list_market_listings() where id=%s", K1, args=(L2,))
+check("seller still sees it, marked expired", r == [(True,)], r)
+r = run("select renew_market_listing(%s)", K2, args=(L2,))
+check("only the seller can renew", is_err(r, "NOT_ALLOWED"), r)
+run("select renew_market_listing(%s)", K1, args=(L2,))
+r = run("select title, course, for_year from list_market_listings() where id=%s", K3, args=(L2,))
+check("renewed textbook is back for juniors", r == [("Engineering Mathematics 2", "Mechanical Engineering", 1)], r)
+
+# Reports
+r = run("insert into market_reports (listing_id, reason) values (%s, 'Looks like a scam')", K3, args=(L2,))
+check("member reports a listing", r == 1, r)
+r = run("insert into market_reports (listing_id, reason) values (%s, 'spam')", T, args=(L2,))
+check("visitor cannot report", is_err(r), r)
+check("admin sees reports", run("select count(*) from market_reports", A) == [(1,)])
+check("seller does not see who reported them", run("select count(*) from market_reports", K1) == [(0,)])
+r = run("delete from market_reports where listing_id=%s", K3, args=(L2,))
+check("reporter cannot delete reports", r == 0, r)
+
+# Photos on listings
+lph = "insert into photos (path, listing_id) values (%s, %s) returning id"
+r = run(lph, K2, args=(f"{K2}/x.jpg", L2))
+check("cannot add photos to someone else's listing", is_err(r), r)
+LP = run(lph, K1, args=(f"{K1}/book.jpg", L2))[0][0]
+upload(K1, f"{K1}/book.jpg")
+check("seller adds a photo to own listing", LP is not None)
+check("pending listing photo hidden from members", run("select count(*) from photos where id=%s", K3, args=(LP,)) == [(0,)])
+run("select review_photo(%s, true)", A, args=(LP,))
+check("approved listing photo visible to members", run("select count(*) from photos where id=%s", K3, args=(LP,)) == [(1,)])
+check("listing photo file downloadable by members",
+      run("select count(*) from storage.objects where name=%s", K3, args=(f"{K1}/book.jpg",)) == [(1,)])
+check("listing photo hidden from visitors", run("select count(*) from photos where id=%s", T, args=(LP,)) == [(0,)])
+check("listing photo hidden signed-out",
+      run("select count(*) from storage.objects where name=%s", None, role="anon", args=(f"{K1}/book.jpg",)) == [(0,)])
+check("anon photo listing still works with listing photos present",
+      not is_err(run("select count(*) from photos", None, role="anon")))
+for i in range(5):
+    run(lph, K1, args=(f"{K1}/b{i}.jpg", L2))
+r = run(lph, K1, args=(f"{K1}/b7.jpg", L2))
+check("max 6 photos per listing", is_err(r, "PHOTO_POST_LIMIT"), r)
+r = run(lph, K1, args=(f"{K1}/heater.jpg", L1))
+check("photo limit counts per listing, not across listings", not is_err(r), r)
+
+r = run("delete from market_listings where id=%s", K3, args=(L2,))
+check("others cannot delete a listing", r == 0, r)
+r = run("delete from market_listings where id=%s", A, args=(L2,))
+check("admin removes a listing (photos and reports go with it)", r == 1, r)
+check("listing photos deleted with the listing", run("select count(*) from photos where listing_id=%s", role=None, args=(L2,)) == [(0,)])
+
 print(f"\n{fails} failing checks")
 sys.exit(1 if fails else 0)
