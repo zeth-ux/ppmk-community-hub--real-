@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CalendarDays,
   Check,
@@ -29,6 +29,7 @@ import {
 import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
 import { EmptyState, ErrorBox, Spinner, buttonPrimary, buttonSecondary, card, inputClass } from '../components/ui'
+import MarketTab from '../components/market/MarketTab'
 
 type When = 'upcoming' | 'closing' | 'past'
 
@@ -64,7 +65,35 @@ const EMPTY: OpportunityInput = {
   status: 'suggested',
 }
 
+/** Explore: opportunities beyond PPMK, and the members' Market (?tab=market). */
 export default function ExplorePage() {
+  const { t } = useLanguage()
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'market' ? 'market' : 'opportunities'
+
+  return (
+    <div className="space-y-6">
+      <div role="tablist" aria-label={t('nav.explore')} className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-surface p-1 sm:inline-grid">
+        {(['opportunities', 'market'] as const).map((id) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setParams(id === 'market' ? { tab: 'market' } : {})}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition sm:px-6 ${
+              tab === id ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {id === 'market' ? `🛍️ ${t('explore.tabMarket')}` : `🌏 ${t('explore.tabOpportunities')}`}
+          </button>
+        ))}
+      </div>
+      {tab === 'market' ? <MarketTab /> : <OpportunitiesView />}
+    </div>
+  )
+}
+
+function OpportunitiesView() {
   const { language, t } = useLanguage()
   usePageMeta(t('explore.title'), t('explore.meta'))
   const { session, isMember, isOrganizer } = useAuth()
