@@ -32,6 +32,11 @@ Everything here is on free plans. Nothing costs money.
    - `0009_event_reminders.sql`: "your event is tomorrow" emails (see section 8) and an
      on/off switch on the Me page. Safe to run before the Gmail is ready: nothing is
      sent until section 8 is done.
+   - `0011_marketplace.sql`: **Explore → Market**: members sell or give away preloved
+     items, and seniors pass textbooks to juniors ("Pass the Book"). The seller's contact
+     stays hidden until someone presses "I'm interested". Listing photos use the same
+     admin approval as other photos (**Admin → Photos to review**); reported listings
+     show up for admins at the top of the Market tab. No new keys or Vercel settings.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 
