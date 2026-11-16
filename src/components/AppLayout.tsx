@@ -78,7 +78,7 @@ export default function AppLayout() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 lg:gap-5">
             <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('nav.brandHome')}>
-              <LogoMark size={44} />
+              <LogoMark size={36} />
               <div className="leading-none">
                 <p className="font-display text-[22px] leading-none">
                   PPMK<span className="text-gold">.</span>hub
@@ -282,7 +282,7 @@ function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
           <Link to="/" className="inline-flex items-center gap-2.5" aria-label={t('nav.brandHome')}>
-            <LogoMark size={40} />
+            <LogoMark size={32} />
             <span className="font-display text-2xl">
               PPMK<span className="text-gold">.</span>hub
             </span>
