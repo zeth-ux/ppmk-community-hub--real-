@@ -41,6 +41,11 @@ import type {
   EventInput,
   HubEvent,
   HubStats,
+  MarketInterest,
+  MarketListing,
+  MarketListingInput,
+  MarketReport,
+  MarketStatus,
   Member,
   Profile,
   ProfileInput,
@@ -615,6 +620,73 @@ export async function deleteOpportunity(id: string): Promise<void> {
   must(await supabase.from('opportunities').delete().eq('id', id))
 }
 
+// ---------- Explore: Market & Pass the Book ----------
+// No money goes through the hub. The seller's contact is only revealed to
+// people who press "I'm interested" (checked in the database, 0011).
+
+export async function listMarketListings(): Promise<MarketListing[]> {
+  const rows = must(await supabase.rpc('list_market_listings')) as MarketListing[]
+  return rows.map((r) => ({ ...r, interest_count: r.interest_count === null ? null : Number(r.interest_count) }))
+}
+
+/** Creates or updates your listing. Returns its id. */
+export async function saveMarketListing(input: MarketListingInput, id?: string): Promise<string> {
+  if (id) {
+    must(await supabase.from('market_listings').update(input).eq('id', id))
+    return id
+  }
+  const row = must(await supabase.from('market_listings').insert(input).select('id').single()) as { id: string }
+  return row.id
+}
+
+export async function setMarketListingStatus(id: string, status: MarketStatus): Promise<void> {
+  must(await supabase.from('market_listings').update({ status }).eq('id', id))
+}
+
+export async function renewMarketListing(id: string): Promise<void> {
+  must(await supabase.rpc('renew_market_listing', { p_listing: id }))
+}
+
+/** Seller or admin. Photos and requests are removed with it. */
+export async function deleteMarketListing(id: string): Promise<void> {
+  const photos = must(await supabase.from('photos').select('path').eq('listing_id', id)) as { path: string }[]
+  must(await supabase.from('market_listings').delete().eq('id', id))
+  if (photos.length) await supabase.storage.from('photos').remove(photos.map((p) => p.path))
+}
+
+/** "I'm interested": tells the seller and returns their contact. */
+export async function askMarketContact(id: string, message = ''): Promise<string> {
+  return must(await supabase.rpc('ask_market_contact', { p_listing: id, p_message: message })) as string
+}
+
+export async function withdrawMarketInterest(id: string, userId: string): Promise<void> {
+  must(await supabase.from('market_interests').delete().eq('listing_id', id).eq('buyer_id', userId))
+}
+
+/** Seller: who pressed "I'm interested". */
+export async function listMarketInterests(id: string): Promise<MarketInterest[]> {
+  return must(await supabase.rpc('market_listing_interests', { p_listing: id })) as MarketInterest[]
+}
+
+export async function reportMarketListing(id: string, reason: string): Promise<void> {
+  must(await supabase.from('market_reports').insert({ listing_id: id, reason }))
+}
+
+/** Admins: reported listings, newest first. */
+export async function listMarketReports(): Promise<MarketReport[]> {
+  const rows = must(
+    await supabase
+      .from('market_reports')
+      .select('id, listing_id, reason, created_at, market_listings(title)')
+      .order('created_at', { ascending: false }),
+  ) as unknown as (Omit<MarketReport, 'listing_title'> & { market_listings: { title: string } | null })[]
+  return rows.map(({ market_listings, ...r }) => ({ ...r, listing_title: market_listings?.title ?? '' }))
+}
+
+export async function dismissMarketReport(id: string): Promise<void> {
+  must(await supabase.from('market_reports').delete().eq('id', id))
+}
+
 // ---------- Homepage (works signed out) ----------
 
 export async function listPublicUpcomingEvents(): Promise<PublicEvent[]> {
@@ -686,6 +758,7 @@ export async function listPendingPhotos(): Promise<Photo[]> {
 
   return photos.map((p) => {
     if (p.forum_post_id) return { ...p, context: { label: 'Discussion post', href: `/discuss/${p.forum_post_id}` } }
+    if (p.listing_id) return { ...p, context: { label: 'Market listing', href: `/explore?tab=market&item=${p.listing_id}` } }
     if (p.club_id) return { ...p, context: { label: `${clubName(p.club_id)} · club photos`, href: `/clubs/${p.club_id}?tab=about` } }
     const post = posts.find((x) => x.id === p.club_post_id)
     return { ...p, context: post ? { label: `${clubName(post.club_id)} · “${post.title}”`, href: `/clubs/${post.club_id}` } : { label: 'Club post', href: '/clubs' } }

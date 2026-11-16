@@ -393,6 +393,81 @@ export type Opportunity = {
 
 export type OpportunityInput = Omit<Opportunity, 'id' | 'created_by' | 'created_at' | 'updated_at'>
 
+// ---------- Explore: Market & Pass the Book (0011) ----------
+
+export const MARKET_CATEGORIES = {
+  textbook: { emoji: '📚' },
+  electronics: { emoji: '🔌' },
+  kitchen: { emoji: '🍳' },
+  furniture: { emoji: '🪑' },
+  clothing: { emoji: '🧥' },
+  other: { emoji: '📦' },
+} as const
+
+export type MarketCategory = keyof typeof MARKET_CATEGORIES
+export type MarketKind = 'sell' | 'free'
+export type MarketCondition = 'new' | 'like_new' | 'good' | 'fair'
+/** 'done' = sold or given away. */
+export type MarketStatus = 'available' | 'reserved' | 'done'
+
+/** A listing as members see it (list_market_listings). */
+export type MarketListing = {
+  id: string
+  kind: MarketKind
+  category: MarketCategory
+  title: string
+  description: string
+  price_krw: number | null
+  condition: MarketCondition
+  area: string
+  course: string | null
+  subject_code: string | null
+  for_year: number | null
+  status: MarketStatus
+  bumped_at: string
+  created_at: string
+  seller_username: string | null
+  is_mine: boolean
+  i_asked: boolean
+  /** Only for the seller, admins and people who pressed "I'm interested". */
+  contact: string | null
+  /** Only for the seller and admins. */
+  interest_count: number | null
+  /** Older than 60 days: hidden from others until the seller renews it. */
+  expired: boolean
+}
+
+export type MarketListingInput = {
+  kind: MarketKind
+  category: MarketCategory
+  title: string
+  description: string
+  price_krw: number | null
+  condition: MarketCondition
+  area: string
+  contact: string
+  course: string | null
+  subject_code: string | null
+  for_year: number | null
+}
+
+export type MarketInterest = {
+  username: string | null
+  full_name: string | null
+  batch: number | null
+  course: string | null
+  message: string
+  created_at: string
+}
+
+export type MarketReport = {
+  id: string
+  listing_id: string
+  reason: string
+  created_at: string
+  listing_title: string
+}
+
 // ---------- Homepage (signed out) ----------
 
 export type PublicEvent = {
@@ -409,7 +484,7 @@ export type PublicStats = { members: number; clubs: number; events_this_year: nu
 
 // ---------- Photos (admin-approved) ----------
 
-export type PhotoTargetKey = 'forum_post_id' | 'club_post_id' | 'club_id'
+export type PhotoTargetKey = 'forum_post_id' | 'club_post_id' | 'club_id' | 'listing_id'
 export type PhotoTarget = Partial<Record<PhotoTargetKey, string>>
 
 export type Photo = {
@@ -419,6 +494,7 @@ export type Photo = {
   forum_post_id: string | null
   club_post_id: string | null
   club_id: string | null
+  listing_id?: string | null
   caption: string
   status: 'pending' | 'approved' | 'rejected'
   reject_reason: string

@@ -10,6 +10,8 @@ import type {
   ForumComment,
   ForumPost,
   HubEvent,
+  MarketListing,
+  MarketReport,
   Opportunity,
   OrgCalendarItem,
   OrgMember,
@@ -593,3 +595,48 @@ export const demoOrgCalendar: OrgCalendarItem[] = [
   cal({ id: 'oc-5', title: 'Hari Raya Aidilfitri open house', category: 'festive', start_date: day(118), location: 'Seoul', description: 'Sample date: the real one follows the moon sighting.' }),
   cal({ id: 'oc-6', title: 'Spring semester starts', category: 'academic', start_date: day(108) }),
 ]
+
+// ---------- Market & Pass the Book (sample listings, no photos) ----------
+
+/** A listing as stored: the demo API hides `contact` like the database does. */
+export type DemoListing = Omit<MarketListing, 'is_mine' | 'i_asked' | 'interest_count' | 'expired' | 'contact'> & {
+  seller_id: string
+  contact: string
+}
+
+function listing(l: Partial<DemoListing> & Pick<DemoListing, 'id' | 'title' | 'category' | 'seller_id'>): DemoListing {
+  return {
+    kind: 'sell', description: '', price_krw: null, condition: 'good', area: 'ERICA main gate',
+    course: null, subject_code: null, for_year: null, status: 'available',
+    bumped_at: hoursAgo(24), created_at: hoursAgo(24),
+    seller_username: demoUsernames[l.seller_id] ?? 'member', contact: 'kakao: sample_id', ...l,
+  }
+}
+
+export const demoListings: DemoListing[] = [
+  listing({ id: 'mk-1', title: 'Cuckoo rice cooker, 6 cups', category: 'kitchen', seller_id: 'member-1', price_krw: 20000,
+    description: 'Used for 2 years, works perfectly. Inner pot has a small scratch. Going home in December.', area: 'Changui-gwan dorm',
+    contact: 'https://open.kakao.com/o/sample', bumped_at: hoursAgo(3) }),
+  listing({ id: 'mk-2', title: 'Winter puffer jacket (M), black', category: 'clothing', seller_id: 'member-2', kind: 'free', condition: 'like_new',
+    description: 'Too warm for me now that I have a new one. Free for anyone who needs it this winter.', bumped_at: hoursAgo(8) }),
+  listing({ id: 'mk-3', title: 'Electric heater, 2 winters old', category: 'electronics', seller_id: 'member-4', price_krw: 15000, status: 'reserved', bumped_at: hoursAgo(20) }),
+  listing({ id: 'mk-4', title: 'IKEA study desk + chair', category: 'furniture', seller_id: 'member-5', price_krw: 30000, condition: 'fair',
+    description: 'You need to pick it up yourself (2nd floor, no lift). Near Sangnoksu station.', area: 'Sangnoksu station', bumped_at: hoursAgo(40) }),
+  listing({ id: 'mk-5', title: 'Data Structures and Algorithms in Java', category: 'textbook', seller_id: 'member-4', kind: 'free',
+    course: 'Computer Science', subject_code: 'CSE2010', for_year: 2, description: '6th edition. Some highlights in chapters 3–5.', bumped_at: hoursAgo(5) }),
+  listing({ id: 'mk-6', title: 'Calculus: Early Transcendentals', category: 'textbook', seller_id: 'member-6', price_krw: 10000,
+    course: null, subject_code: 'MAT1001', for_year: 1, description: 'Used in first-year calculus for all engineering courses.', bumped_at: hoursAgo(30) }),
+  listing({ id: 'mk-7', title: 'Engineering Mechanics: Statics', category: 'textbook', seller_id: 'member-3', kind: 'free',
+    course: 'Mechanical Engineering', for_year: 1, bumped_at: hoursAgo(50) }),
+  listing({ id: 'mk-8', title: 'LED desk lamp', category: 'electronics', seller_id: DEMO_USER_ID, price_krw: 5000, condition: 'like_new',
+    contact: 'kakao: aisyah_r', bumped_at: hoursAgo(12) }),
+  listing({ id: 'mk-9', title: 'TOPIK I practice book', category: 'other', seller_id: 'member-7', kind: 'free', bumped_at: hoursAgo(26) }),
+]
+
+export const demoListingInterests: { listing_id: string; buyer_id: string; message: string; created_at: string }[] = [
+  { listing_id: 'mk-8', buyer_id: 'member-2', message: 'Hi! Can I get it tomorrow after class?', created_at: hoursAgo(6) },
+  { listing_id: 'mk-8', buyer_id: 'member-5', message: '', created_at: hoursAgo(2) },
+  { listing_id: 'mk-9', buyer_id: DEMO_USER_ID, message: 'Taking TOPIK in April, would love this!', created_at: hoursAgo(10) },
+]
+
+export const demoMarketReports: MarketReport[] = []
