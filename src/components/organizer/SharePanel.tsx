@@ -204,7 +204,7 @@ export default function SharePanel({
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${
-              tab === t.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+              tab === t.id ? 'bg-primary text-on-primary' : 'bg-slate-100 text-slate-600'
             }`}
           >
             {t.label}

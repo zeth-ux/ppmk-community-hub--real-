@@ -368,7 +368,7 @@ export default function EventForm({
               aria-pressed={form.audience === value}
               className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 form.audience === value
-                  ? 'border-primary bg-red-50 text-primary'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-slate-200 bg-surface text-slate-600'
               }`}
             >
@@ -391,7 +391,7 @@ export default function EventForm({
                   type="checkbox"
                   checked={form.audience_batches.includes(batch)}
                   onChange={() => toggleBatch(batch)}
-                  className="accent-red-700"
+                  className="accent-primary"
                 />
                 Batch {batch}
               </label>
@@ -422,7 +422,7 @@ export default function EventForm({
                     type="checkbox"
                     checked={invited.has(member.id)}
                     onChange={() => toggleMember(member.id)}
-                    className="accent-red-700"
+                    className="accent-primary"
                   />
                   <span className="flex-1">{member.full_name}</span>
                   <span className="text-xs text-slate-400">

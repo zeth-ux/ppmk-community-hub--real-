@@ -139,7 +139,7 @@ export default function DiscussNewPage() {
                         type="button"
                         onClick={() => setForm({ ...form, category: c.id, is_anonymous: c.id === 'serious' ? true : form.is_anonymous })}
                         className={`rounded-xl border p-3 text-left transition ${
-                          form.category === c.id ? 'border-primary bg-red-50 ring-2 ring-red-100' : 'border-slate-200 hover:border-slate-300'
+                          form.category === c.id ? 'border-primary bg-primary/10 ring-2 ring-primary/25' : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
                         <span className="text-lg">{c.emoji}</span>

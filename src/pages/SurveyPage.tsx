@@ -39,7 +39,7 @@ export default function SurveyPage() {
               alert(t('survey.notOpen'))
             }
           }}
-          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-white"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary"
         >
           {t('survey.open')}
           <ExternalLink size={17} />

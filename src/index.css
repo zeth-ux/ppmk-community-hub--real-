@@ -4,11 +4,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens. One warm palette, two themes.
- * Light: off-white paper with near-black ink. Dark: warm near-black.
- * Accents: PPMK red for actions, Jalur Gemilang gold for highlights.
+ * Design tokens. One palette taken from the PPMK logo, two themes.
+ * Logo colours: deep navy #031E5A, gold #FAC81C, sky blue #72BFF8.
+ * Light: cool white paper with navy ink and navy actions.
+ * Dark: neutral black, sky blue for actions.
+ * Gold is the highlight in both.
  *
- * Pages use Tailwind's slate scale for greys; here it is remapped to warm
+ * Pages use Tailwind's slate scale for greys; here it is remapped to navy-tinted
  * greys, and flipped in dark mode, so every page follows the theme
  * without per-element dark: classes.
  */
@@ -18,50 +20,52 @@
   --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-primary: #ac0024;
-  --color-primary-container: #c81d3a;
-  --color-gold: #9a6700;
-  --color-background: #f6f4f1;
+  --color-primary: #0a2a6b;
+  --color-primary-container: #1d4398;
+  --color-on-primary: #ffffff;
+  --color-gold: #946800;
+  --color-background: #f4f7fc;
   --color-surface: #ffffff;
-  --color-ink: #1c1613;
+  --color-ink: #0b1c42;
   --color-on-ink: #ffffff;
   --color-secondary: #465f88;
 
-  --color-slate-50: #f4f1ee;
-  --color-slate-100: #ece8e3;
-  --color-slate-200: #e0d9d2;
-  --color-slate-300: #cbc1b8;
-  --color-slate-400: #9e9188;
-  --color-slate-500: #776a62;
-  --color-slate-600: #5c5049;
-  --color-slate-700: #433933;
-  --color-slate-800: #2c2420;
-  --color-slate-900: #1c1613;
-  --color-slate-950: #120e0c;
+  --color-slate-50: #f1f5fb;
+  --color-slate-100: #e5ecf6;
+  --color-slate-200: #d3deee;
+  --color-slate-300: #b6c5dd;
+  --color-slate-400: #8496b8;
+  --color-slate-500: #5f7194;
+  --color-slate-600: #475779;
+  --color-slate-700: #33425f;
+  --color-slate-800: #1e2b47;
+  --color-slate-900: #0c1a38;
+  --color-slate-950: #07112a;
 }
 
 .dark {
   color-scheme: dark;
 
-  --color-primary: #f0596a;
-  --color-primary-container: #d63d50;
-  --color-gold: #f2b33d;
-  --color-background: #14100e;
-  --color-surface: #1d1714;
-  --color-ink: #f3ede6;
-  --color-on-ink: #14100e;
+  --color-primary: #72bff8;
+  --color-primary-container: #9ad2fb;
+  --color-on-primary: #061633;
+  --color-gold: #fac81c;
+  --color-background: #0a0b0e;
+  --color-surface: #14161b;
+  --color-ink: #f1f3f6;
+  --color-on-ink: #0a0b0e;
 
-  --color-slate-50: #241d19;
-  --color-slate-100: #2c241f;
-  --color-slate-200: #3a302a;
-  --color-slate-300: #54473f;
-  --color-slate-400: #8b7e74;
-  --color-slate-500: #a3968b;
-  --color-slate-600: #c2b6ac;
-  --color-slate-700: #d8cec5;
-  --color-slate-800: #e8e0d8;
-  --color-slate-900: #f3ede6;
-  --color-slate-950: #faf6f2;
+  --color-slate-50: #181b21;
+  --color-slate-100: #1f232a;
+  --color-slate-200: #2c313a;
+  --color-slate-300: #444b58;
+  --color-slate-400: #7d8594;
+  --color-slate-500: #9ba3b1;
+  --color-slate-600: #bcc2cc;
+  --color-slate-700: #d3d8df;
+  --color-slate-800: #e5e8ec;
+  --color-slate-900: #f1f3f6;
+  --color-slate-950: #fafbfc;
 
   /* Tinted backgrounds become low-opacity washes; their text gets lighter. */
   --color-red-50: rgb(240 89 106 / 0.12);
@@ -84,11 +88,11 @@
   --color-emerald-700: #5fe0b0;
   --color-emerald-800: #86e9c3;
   --color-emerald-900: #a7f0d3;
-  --color-amber-50: rgb(242 179 61 / 0.12);
-  --color-amber-100: rgb(242 179 61 / 0.2);
-  --color-amber-200: rgb(242 179 61 / 0.32);
-  --color-amber-300: rgb(242 179 61 / 0.45);
-  --color-amber-600: #f2b33d;
+  --color-amber-50: rgb(250 200 28 / 0.12);
+  --color-amber-100: rgb(250 200 28 / 0.2);
+  --color-amber-200: rgb(250 200 28 / 0.32);
+  --color-amber-300: rgb(250 200 28 / 0.45);
+  --color-amber-600: #fac81c;
   --color-amber-700: #f5c466;
   --color-amber-800: #f8d48f;
   --color-amber-900: #fbe2b5;
@@ -119,10 +123,11 @@ html {
   background: var(--color-background);
 }
 
+/* Light: a soft navy-tinted wash. Dark: near-flat black. */
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--color-background);
+  background: var(--color-background) linear-gradient(180deg, #f9fbff 0%, #eaf0fa 100%) fixed;
   color: var(--color-slate-900);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -131,6 +136,10 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
+}
+
+.dark body {
+  background: var(--color-background) linear-gradient(180deg, #08090c 0%, #0e1015 100%) fixed;
 }
 
 @media (prefers-reduced-motion: reduce) {

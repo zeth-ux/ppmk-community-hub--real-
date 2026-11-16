@@ -136,7 +136,7 @@ export default function EventsPage() {
                 onClick={() => setCategory(item)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
                   category === item
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-on-primary'
                     : 'border border-slate-200 bg-surface text-slate-600'
                 }`}
               >
@@ -238,9 +238,9 @@ export default function EventsPage() {
                   onClick={() => setSelectedDate(count ? dateKey : null)}
                   className={`relative h-12 rounded-lg text-sm ${
                     selected
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-on-primary'
                       : dateKey === today
-                        ? 'font-bold text-primary ring-1 ring-red-200'
+                        ? 'font-bold text-primary ring-1 ring-primary/30'
                         : 'hover:bg-slate-50'
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function EventsPage() {
                 <Link
                   key={event.id}
                   to={`/events/${event.id}`}
-                  className="block rounded-xl bg-slate-50 p-4 hover:bg-red-50"
+                  className="block rounded-xl bg-slate-50 p-4 hover:bg-primary/10"
                 >
                   <p className="font-semibold">{event.title}</p>
                   <p className="mt-1 text-xs text-slate-500">

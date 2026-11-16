@@ -343,8 +343,8 @@ function RoleBadge({ role }: { role: ClubRole }) {
     member: 'clubRole.member',
   }
   const style: Record<ClubRole, string> = {
-    president: 'bg-primary text-white',
-    vice_president: 'bg-red-50 text-primary',
+    president: 'bg-primary text-on-primary',
+    vice_president: 'bg-primary/10 text-primary',
     committee: 'bg-sky-50 text-sky-700',
     member: 'bg-slate-100 text-slate-600',
   }
@@ -565,7 +565,7 @@ function ActivityTab({
                   type="button"
                   onClick={() => setForm({ ...form, kind: k })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    form.kind === k ? 'bg-primary text-white' : 'border border-slate-200 text-slate-600'
+                    form.kind === k ? 'bg-primary text-on-primary' : 'border border-slate-200 text-slate-600'
                   }`}
                 >
                   {k === 'meeting' ? t('club.regularMeetingKind') : t(KIND_LABEL[k])}
@@ -625,7 +625,7 @@ function ActivityTab({
               </label>
               {isLeader && (
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="accent-red-700" />
+                  <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} className="accent-primary" />
                   {t('club.pinToTop')}
                 </label>
               )}
@@ -638,7 +638,7 @@ function ActivityTab({
           </form>
         ) : (
           <button onClick={() => setComposing(true)} className={`${card} flex w-full items-center gap-3 p-4 text-left text-sm text-slate-500 hover:border-primary`}>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 font-bold text-primary">+</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">+</span>
             {t('club.shareUpdate')}
           </button>
         ))}
@@ -975,7 +975,7 @@ function Setting({
             type="button"
             onClick={() => onChange(v)}
             className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
-              value === v ? 'border-primary bg-surface font-semibold text-primary ring-2 ring-red-100' : 'border-slate-200 bg-surface text-slate-600'
+              value === v ? 'border-primary bg-surface font-semibold text-primary ring-2 ring-primary/25' : 'border-slate-200 bg-surface text-slate-600'
             }`}
           >
             {icon}
