@@ -84,7 +84,7 @@ export default function ClubsPage() {
               key={item}
               onClick={() => setCategory(item)}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
-                category === item ? 'bg-primary text-white' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
+                category === item ? 'bg-primary text-on-primary' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
               }`}
             >
               {item === 'All' ? t('clubs.all') : categoryTranslation[item] ? t(categoryTranslation[item]) : item}

@@ -46,7 +46,7 @@ export default function EventCard({
 
       <div className="flex flex-1 flex-col p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-primary">
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
             {event.category}
           </span>
 

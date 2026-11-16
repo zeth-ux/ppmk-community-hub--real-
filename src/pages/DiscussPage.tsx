@@ -53,7 +53,7 @@ const CATEGORY_LABEL_KEYS: Record<ForumCategory, TranslationKey> = {
 
 const GROUP_STYLE: Record<ForumGroupId, { active: string; soft: string }> = {
   explore: { active: 'border-emerald-500', soft: 'bg-emerald-50 text-emerald-800' },
-  life: { active: 'border-primary', soft: 'bg-red-50 text-primary' },
+  life: { active: 'border-primary', soft: 'bg-primary/10 text-primary' },
   teamup: { active: 'border-indigo-500', soft: 'bg-indigo-50 text-indigo-800' },
 }
 
@@ -180,7 +180,7 @@ export default function DiscussPage() {
                     key={id}
                     onClick={() => go({ sort: id })}
                     className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                      sort === id ? 'bg-red-50 text-primary' : 'text-slate-500 hover:text-slate-800'
+                      sort === id ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     <Icon size={15} /> {t(label)}
@@ -312,7 +312,7 @@ export default function DiscussPage() {
                           key={c.id}
                           onClick={() => go({ c: c.id })}
                           className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                            category === c.id ? 'bg-red-50 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
+                            category === c.id ? 'bg-primary/10 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           <span>{c.emoji}</span> {t(CATEGORY_LABEL_KEYS[c.id])}

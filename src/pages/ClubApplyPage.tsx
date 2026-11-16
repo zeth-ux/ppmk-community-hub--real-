@@ -102,7 +102,7 @@ export default function ClubApplyPage() {
           return (
             <div key={title as string} className={`${card} p-4`}>
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{i + 1}</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary">{i + 1}</span>
                 <I size={18} className="text-primary" />
               </div>
               <p className="mt-3 text-sm font-bold sm:text-base">{title as string}</p>
@@ -209,7 +209,7 @@ function DocumentChecklist() {
             <div>
               <p className="font-semibold">
                 {t(DOC_KEYS[doc.key][0])}{' '}
-                <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-semibold ${doc.required ? 'bg-red-50 text-primary' : 'bg-slate-100 text-slate-500'}`}>
+                <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-semibold ${doc.required ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'}`}>
                   {doc.required ? t('clubApply.required') : t('clubApply.optional')}
                 </span>
               </p>

@@ -366,7 +366,7 @@ function CommentItem({
           aria-label={collapsed ? t('post.expandThread') : t('post.collapseThread')}
           className="flex w-7 shrink-0 flex-col items-center"
         >
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${node.is_anonymous ? 'bg-ink text-on-ink' : 'bg-red-50 text-primary'}`}>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${node.is_anonymous ? 'bg-ink text-on-ink' : 'bg-primary/10 text-primary'}`}>
             {node.is_anonymous ? '?' : (node.author_username ?? '?').charAt(0).toUpperCase()}
           </span>
           {!collapsed && node.children.length > 0 && <span className="mt-1 w-px flex-1 bg-slate-200 hover:bg-primary" />}

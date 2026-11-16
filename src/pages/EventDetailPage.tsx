@@ -188,7 +188,7 @@ export default function EventDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 to={`/events?category=${encodeURIComponent(event.category)}`}
-                className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-primary hover:bg-red-100"
+                className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
               >
                 {categoryTranslation[event.category] ? t(categoryTranslation[event.category]) : event.category}
               </Link>

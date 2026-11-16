@@ -181,10 +181,10 @@ export function friendlyError(error: unknown): string {
 }
 
 const CLUB_PALETTES = [
-  'from-rose-500 to-red-700',
-  'from-sky-500 to-indigo-600',
+  'from-blue-600 to-blue-900',
+  'from-sky-400 to-blue-700',
   'from-emerald-500 to-teal-700',
-  'from-amber-500 to-orange-600',
+  'from-amber-400 to-amber-600',
   'from-fuchsia-500 to-purple-700',
   'from-slate-600 to-slate-800',
 ]

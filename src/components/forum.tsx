@@ -52,7 +52,7 @@ export function VoteButtons({
         onClick={(e) => void vote(e, 1)}
         aria-label={t('forum.upvote')}
         aria-pressed={state.mine === 1}
-        className={`rounded-md p-1 transition hover:bg-red-50 ${state.mine === 1 ? 'text-primary' : 'text-slate-400 hover:text-primary'}`}
+        className={`rounded-md p-1 transition hover:bg-primary/10 ${state.mine === 1 ? 'text-primary' : 'text-slate-400 hover:text-primary'}`}
       >
         <ArrowBigUp size={22} fill={state.mine === 1 ? 'currentColor' : 'none'} />
       </button>
@@ -82,7 +82,7 @@ export function AuthorTag({ username, anonymous, isOp, isMine }: { username: str
       ) : (
         <span className="font-semibold text-slate-700">@{username ?? 'deleted'}</span>
       )}
-      {isOp && <span className="rounded bg-red-50 px-1 text-[10px] font-bold text-primary">OP</span>}
+      {isOp && <span className="rounded bg-primary/10 px-1 text-[10px] font-bold text-primary">OP</span>}
       {isMine && <span className="text-slate-400">{t('forum.you')}</span>}
     </span>
   )

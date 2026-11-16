@@ -297,7 +297,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       onClick={onClick}
       className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-        active ? 'bg-primary text-white' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
+        active ? 'bg-primary text-on-primary' : 'border border-slate-200 bg-surface text-slate-600 hover:border-slate-300'
       }`}
     >
       {children}

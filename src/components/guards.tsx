@@ -72,7 +72,7 @@ export function MembersOnly({ compact = false }: { compact?: boolean }) {
   const [before, after = ''] = t('guards.membersBody').split('{explore}')
   return (
     <div className={`mx-auto max-w-lg rounded-2xl border border-slate-200 bg-surface text-center ${compact ? 'p-6' : 'p-8 sm:p-10'}`}>
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-primary">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <Lock size={22} />
       </div>
       <p className="mt-4 text-lg font-bold">{t('guards.membersTitle')}</p>

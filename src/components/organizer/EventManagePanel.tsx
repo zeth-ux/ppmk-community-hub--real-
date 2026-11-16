@@ -225,7 +225,7 @@ export default function EventManagePanel({
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold ${
-                  filter === f ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
+                  filter === f ? 'bg-primary text-on-primary' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {f === 'all' ? 'All' : statusLabel(f)} ({counts[f]})

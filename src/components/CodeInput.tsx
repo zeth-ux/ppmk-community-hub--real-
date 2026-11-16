@@ -74,7 +74,7 @@ export default function CodeInput({
           onKeyDown={(e) => onKeyDown(i, e)}
           onPaste={onPaste}
           onFocus={(e) => e.currentTarget.select()}
-          className={`h-14 w-full min-w-0 rounded-xl border bg-surface text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-red-100 disabled:bg-slate-50 sm:h-16 ${
+          className={`h-14 w-full min-w-0 rounded-xl border bg-surface text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25 disabled:bg-slate-50 sm:h-16 ${
             digit ? 'border-slate-400' : 'border-slate-200'
           }`}
         />

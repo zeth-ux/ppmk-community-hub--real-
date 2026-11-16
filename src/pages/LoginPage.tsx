@@ -96,7 +96,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md py-4 sm:py-10">
       <div className={`${card} p-6 sm:p-8`}>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-primary">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Mail size={22} />
         </div>
 

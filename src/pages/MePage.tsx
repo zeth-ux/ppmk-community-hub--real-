@@ -266,10 +266,10 @@ export default function MePage() {
                 setError('')
               }}
               className={`flex gap-3 rounded-2xl border bg-surface p-4 text-left transition ${
-                accountType === value ? 'border-primary ring-2 ring-red-100' : 'border-slate-200 hover:border-slate-300'
+                accountType === value ? 'border-primary ring-2 ring-primary/25' : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accountType === value ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accountType === value ? 'bg-primary text-on-primary' : 'bg-slate-100 text-slate-500'}`}>
                 <Icon size={20} />
               </span>
               <span>
@@ -283,7 +283,7 @@ export default function MePage() {
 
       <form onSubmit={handleSave} className={`${card} p-5 sm:p-6`}>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-primary">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <UserRound size={20} />
           </div>
           <div>
@@ -425,7 +425,7 @@ export default function MePage() {
             type="checkbox"
             checked={form.consent}
             onChange={(e) => update('consent', e.target.checked)}
-            className="mt-1 h-4 w-4 shrink-0 accent-red-700"
+            className="mt-1 h-4 w-4 shrink-0 accent-primary"
           />
           <span className="text-sm leading-6 text-slate-600">
             {isVisitorForm

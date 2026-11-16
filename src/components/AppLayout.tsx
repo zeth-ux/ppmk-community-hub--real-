@@ -114,7 +114,7 @@ export default function AppLayout() {
             ) : (
               <Link
                 to={`/login?next=${encodeURIComponent(location.pathname === '/' ? '/events' : location.pathname)}`}
-                className="inline-flex items-center gap-2 rounded-[10px] bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-container"
+                className="inline-flex items-center gap-2 rounded-[10px] bg-primary px-4 py-2.5 text-sm font-bold text-on-primary transition hover:bg-primary-container"
               >
                 <LogIn size={16} />
                 {t('nav.signIn')}
@@ -199,7 +199,7 @@ function AccountMenu() {
         aria-expanded={open}
         className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 font-bold text-primary">{initial}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{initial}</span>
         <span className="hidden max-w-[9rem] truncate sm:inline">{displayName(profile)}</span>
         <ChevronDown size={15} className={`hidden transition min-[360px]:block ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -370,7 +370,7 @@ function LanguageSwitcher() {
                 setOpen(false)
               }}
               className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm ${
-                language === option.code ? 'bg-red-50 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
+                language === option.code ? 'bg-primary/10 font-semibold text-primary' : 'text-slate-700 hover:bg-slate-50'
               }`}
             >
               <span>{option.name}</span>

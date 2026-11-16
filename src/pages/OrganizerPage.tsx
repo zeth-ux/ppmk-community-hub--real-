@@ -160,7 +160,7 @@ function EventGroup({
           key={event.id}
           onClick={() => onSelect(event.id)}
           className={`block w-full rounded-xl px-3 py-2.5 text-left ${
-            event.id === selectedId ? 'bg-red-50' : 'hover:bg-slate-50'
+            event.id === selectedId ? 'bg-primary/10' : 'hover:bg-slate-50'
           }`}
         >
           <p className={`text-sm font-semibold ${event.id === selectedId ? 'text-primary' : ''}`}>
@@ -197,7 +197,7 @@ function MyLedClubs() {
           <p className="text-xs font-semibold text-primary">{t('organizer.youLead')} · {t(roleTranslation[m.role])}</p>
           <Link to={`/clubs/${m.club_id}`} className="mt-0.5 block font-bold hover:text-primary">{m.club!.name}</Link>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
-            <Link to={`/organizer?new=1&club=${m.club_id}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-primary hover:bg-red-100">
+            <Link to={`/organizer?new=1&club=${m.club_id}`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 font-semibold text-primary hover:bg-primary/20">
               <CalendarPlus size={15} /> {t('organizer.clubEvent')}
             </Link>
             <Link to={`/clubs/${m.club_id}?tab=manage`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-200">
