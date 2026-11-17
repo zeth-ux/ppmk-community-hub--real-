@@ -14,13 +14,14 @@ import {
   getAiUsageStats,
   getFeedbackOverview,
   getHubStats,
+  listShowUpOverview,
   listAllProfiles,
   listClubs,
   saveClub,
   setUserRole,
 } from '../lib/api'
-import { friendlyError, isProfileComplete, timeAgo } from '../lib/format'
-import type { AppRole, Club, ClubApplication, ClubInput, Profile } from '../lib/types'
+import { formatDate, friendlyError, isProfileComplete, timeAgo } from '../lib/format'
+import type { AppRole, Club, ClubApplication, ClubInput, Profile, ShowUpRow } from '../lib/types'
 import { CLUB_DOCUMENTS } from '../data/organization'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useLoader } from '../lib/useLoader'
@@ -59,6 +60,7 @@ function StatsSection() {
   const { data, loading, error } = useLoader(getHubStats, [])
   const { data: ai } = useLoader(() => getAiUsageStats().catch(() => []), [])
   const { data: feedback } = useLoader(() => getFeedbackOverview().catch(() => null), [])
+  const { data: showUp } = useLoader(() => listShowUpOverview().catch(() => []), [])
 
   if (loading) return <Spinner />
   if (error) return <ErrorBox>{error}</ErrorBox>
@@ -103,6 +105,7 @@ function StatsSection() {
           </p>
         </section>
       )}
+      {showUp && showUp.length > 0 && <ShowUpOverview rows={showUp} />}
       {ai && ai.length > 0 && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ai.map((row) => (
@@ -117,6 +120,54 @@ function StatsSection() {
         </section>
       )}
     </div>
+  )
+}
+
+/** Said Going vs came, across past events (the pilot report numbers). */
+function ShowUpOverview({ rows }: { rows: ShowUpRow[] }) {
+  const { t } = useLanguage()
+  const going = rows.reduce((n, r) => n + r.said_going, 0)
+  const came = rows.reduce((n, r) => n + r.came, 0)
+  const rate = (c: number, g: number) => (g > 0 ? `${Math.round((c / g) * 100)}%` : '–')
+
+  return (
+    <section className="rounded-2xl border border-green-200 bg-green-50/60 p-4">
+      <p className="text-xs font-semibold text-green-800">{t('showup.adminTitle')}</p>
+      <p className="mt-1 text-2xl font-bold">{rate(came, going)}</p>
+      <p className="text-xs text-slate-500">
+        {t('showup.overall')
+          .replace('{came}', String(came))
+          .replace('{going}', String(going))
+          .replace('{events}', String(rows.length))}
+      </p>
+      <p className="mt-1 text-xs text-slate-500">{t('showup.adminHint')}</p>
+      <div className="-mx-4 mt-3">
+        <table className="w-full text-left text-sm">
+          <thead className="text-xs text-slate-500">
+            <tr>
+              <th className="px-4 py-2">{t('showup.event')}</th>
+              <th className="px-2 py-2 text-right">{t('showup.rate')}</th>
+              <th className="px-4 py-2 text-right">{t('showup.walkIns')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-green-100">
+            {rows.slice(0, 10).map((r) => (
+              <tr key={r.event_id}>
+                <td className="px-4 py-2">
+                  <span className="font-semibold">{r.title}</span>
+                  <span className="block text-xs text-slate-500">{formatDate(r.event_date)}</span>
+                </td>
+                <td className="px-2 py-2 text-right tabular-nums">
+                  {rate(r.came, r.said_going)}
+                  <span className="block text-xs text-slate-500">{r.came}/{r.said_going}</span>
+                </td>
+                <td className="px-4 py-2 text-right tabular-nums">{r.walk_ins}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 

@@ -140,6 +140,8 @@ export function friendlyError(error: unknown): string {
     return translateNow('err.feedbackClosed')
   if (message.includes('BAD_CHECKIN_CODE'))
     return translateNow('err.badCheckinCode')
+  if (message.includes('NOT_TODAY'))
+    return translateNow('err.notToday')
   if (message.includes('LAST_ADMIN'))
     return translateNow('err.lastAdmin')
   if (message.includes('NOT_EVENT_ORGANIZER'))

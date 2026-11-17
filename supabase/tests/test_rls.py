@@ -892,5 +892,120 @@ check("club join link accepts https", r == 1, r)
 r = run("update clubs set join_url='' where id=%s", A, args=(CLUB,))
 check("club join link can be cleared", r == 1, r)
 
+# ---------- 0013: self check-in at the door + show-up numbers ----------
+D1 = new_user("door1@x.com"); D2 = new_user("door2@x.com"); D3 = new_user("door3@x.com")
+D4 = new_user("door4@x.com"); D5 = new_user("door5@x.com"); DX = new_user("doorx@x.com")
+DO2 = new_user("door-org2@x.com")
+for i, u in enumerate([D1, D2, D3, D4, D5, DO2]):
+    complete(u, f"20249{i}0", 2024)
+run("select set_user_role(%s, 'organizer')", A, args=(DO2,))
+ED = run(fb_ins, O, args=("Door night", 0))[0][0]
+ED_FUT = run(fb_ins, O, args=("Door next week", 7))[0][0]
+ED_FULL = run("""insert into events (title, category, event_date, start_time, location, audience, capacity)
+                 values ('Door small', 'Social', public.today_kst(), '18:00', 'Hall', 'everyone', 1) returning id""", O)[0][0]
+run("select set_my_rsvp(%s, 'attending')", D1, args=(ED,))
+run("select set_my_rsvp(%s, 'maybe')", D2, args=(ED,))
+run("select set_my_rsvp(%s, 'not_attending')", D3, args=(ED,))
+run("select set_my_rsvp(%s, 'attending')", D5, args=(ED,))   # says Going, never comes
+
+r = run("select * from door_code(%s)", D1, args=(ED,))
+check("student cannot open the door screen", is_err(r, "NOT_ALLOWED"), r)
+r = run("select * from door_code(%s)", DO2, args=(ED,))
+check("other organizer cannot open this event's door screen", is_err(r, "NOT_EVENT_ORGANIZER"), r)
+r = run("select * from door_code(%s)", None, role="anon", args=(ED,))
+check("signed-out cannot get a door code", is_err(r, "permission denied"), r)
+r = run("select code, seconds_left, is_today from door_code(%s)", O, args=(ED,))
+check("event creator gets a 6-digit door code", len(r) == 1 and len(r[0][0]) == 6 and r[0][0].isdigit()
+      and 1 <= r[0][1] <= 60 and r[0][2] is True, r)
+DCODE = r[0][0]
+r = run("select code from door_code(%s)", A, args=(ED,))
+check("admin gets the same door code", r == [(DCODE,)], r)
+r = run("select secret from private.event_door_secrets", D1)
+check("students cannot read door secrets", is_err(r, "permission denied"), r)
+r = run("select private.door_code_at(gen_random_uuid(), 1)", D1)
+check("students cannot run the code maker", is_err(r, "permission denied"), r)
+
+wrong = "000000" if DCODE != "000000" else "111111"
+r = run("select status from self_check_in(%s, %s)", D1, args=(ED, wrong))
+check("wrong code is refused", r == [("BAD_CODE",)], r)
+check("wrong try is remembered", run("select count(*) from private.door_attempts where user_id=%s", role=None, args=(D1,)) == [(1,)])
+r = run("select status, walk_in from self_check_in(%s, %s)", D1, args=(ED, f"{DCODE[:3]} {DCODE[3:]}"))
+check("Going student checks in with the door code (spaces ok)", r == [("CHECKED_IN", False)], r)
+r = run("select checked_in_at is not null, self_checked_in, walk_in from rsvps where event_id=%s and user_id=%s", role=None, args=(ED, D1))
+check("check-in saved as self check-in", r == [(True, True, False)], r)
+r = run("select status from self_check_in(%s, %s)", D1, args=(ED, wrong))
+check("checking in twice just says ALREADY", r == [("ALREADY",)], r)
+
+r = run("select status, walk_in from self_check_in(%s, %s)", D2, args=(ED, DCODE))
+check("Maybe student who turns up becomes a walk-in", r == [("CHECKED_IN", True)], r)
+r = run("select status from rsvps where event_id=%s and user_id=%s", role=None, args=(ED, D2))
+check("walk-in is now Going", r == [("attending",)], r)
+r = run("select status, walk_in from self_check_in(%s, %s)", D3, args=(ED, DCODE))
+check("\"Can't go\" student who turns up is a walk-in", r == [("CHECKED_IN", True)], r)
+r = run("select status, walk_in from self_check_in(%s, %s)", D4, args=(ED, DCODE))
+check("student with no RSVP can walk in", r == [("CHECKED_IN", True)], r)
+
+secret = run("select secret from private.event_door_secrets where event_id=%s", role=None, args=(ED,))[0][0]
+old = run("select private.door_code_at(%s, floor(extract(epoch from now()) / 60)::bigint - 12)", role=None, args=(secret,))[0][0]
+r = run("select status from self_check_in(%s, %s)", D5, args=(ED, old))
+check("code older than 10 minutes is refused", r == [("BAD_CODE",)] or old == DCODE, r)
+run("delete from private.door_attempts where user_id=%s", role=None, args=(D5,))
+ED_LATE = run(fb_ins, O, args=("Door late arrivals", 0))[0][0]
+run("select code from door_code(%s)", O, args=(ED_LATE,))
+late_secret = run("select secret from private.event_door_secrets where event_id=%s", role=None, args=(ED_LATE,))[0][0]
+recent = run("select private.door_code_at(%s, floor(extract(epoch from now()) / 60)::bigint - 9)", role=None, args=(late_secret,))[0][0]
+r = run("select status from self_check_in(%s, %s)", D1, args=(ED_LATE, recent))
+check("code from 9 minutes ago still works (slow sign-in)", r == [("CHECKED_IN",)], r)
+
+r = run("select status from self_check_in(%s, %s)", DX, args=(ED, DCODE))
+check("incomplete profile cannot self check-in", is_err(r, "PROFILE_INCOMPLETE"), r)
+r = run("select status from self_check_in(%s, %s)", None, role="anon", args=(ED, DCODE))
+check("signed-out cannot self check-in", is_err(r, "permission denied"), r)
+run("select code from door_code(%s)", O, args=(ED_FUT,))
+r = run("select status from self_check_in(%s, %s)", D1, args=(ED_FUT, DCODE))
+check("door check-in only works on the event day", is_err(r, "NOT_TODAY"), r)
+r = run("update rsvps set walk_in=false, self_checked_in=true where event_id=%s and user_id=auth.uid()", D2, args=(ED,))
+check("students cannot edit the walk-in / self check-in marks", is_err(r, "permission denied"), r)
+r = run("update rsvps set checked_in_at=now() where event_id=%s and user_id=auth.uid()", D5, args=(ED,))
+check("students still cannot check themselves in directly", is_err(r, "permission denied"), r)
+
+# Capacity: a walk-in can't push a full event over its limit
+run("select set_my_rsvp(%s, 'attending')", D1, args=(ED_FULL,))
+FCODE = run("select code from door_code(%s)", O, args=(ED_FULL,))[0][0]
+r = run("select status from self_check_in(%s, %s)", D4, args=(ED_FULL, FCODE))
+check("walk-in to a full event is refused", is_err(r, "EVENT_FULL"), r)
+r = run("select status, walk_in from self_check_in(%s, %s)", D1, args=(ED_FULL, FCODE))
+check("person with a seat still checks in at a full event", r == [("CHECKED_IN", False)], r)
+
+# Guessing: 10 wrong codes in an hour, then stop
+for _ in range(9):
+    run("select status from self_check_in(%s, %s)", D5, args=(ED, wrong))
+r = run("select status from self_check_in(%s, %s)", D5, args=(ED, wrong))
+check("10th wrong code is still checked", r == [("BAD_CODE",)], r)
+r = run("select status from self_check_in(%s, %s)", D5, args=(ED, DCODE))
+check("after 10 wrong codes even the right one is refused", r == [("TOO_MANY_TRIES",)], r)
+
+# Organizer undo clears the self check-in mark
+run("select check_in(%s, %s, false)", O, args=(ED, D4))
+r = run("select checked_in_at, self_checked_in from rsvps where event_id=%s and user_id=%s", role=None, args=(ED, D4))
+check("organizer undo clears the self check-in", r == [(None, False)], r)
+run("select check_in(%s, %s, true)", O, args=(ED, D4))
+
+# Show-up numbers
+r = run("select * from event_show_up(%s)", D1, args=(ED,))
+check("students cannot see show-up numbers", is_err(r, "NOT_ALLOWED"), r)
+r = run("select said_going, came, no_shows, walk_ins, self_checked_in, event_over from event_show_up(%s)", O, args=(ED,))
+# said Going: D1, D5 · came: D1 · walk-ins: D2, D3, D4 · self: D1, D2, D3 (D4 was re-checked by the organizer)
+check("show-up numbers on the day (no no-shows yet)", r == [(2, 1, 0, 3, 3, False)], r)
+run("update events set event_date = public.today_kst() - 1 where id=%s", role=None, args=(ED,))
+r = run("select said_going, came, no_shows, event_over from event_show_up(%s)", O, args=(ED,))
+check("no-shows counted once the day is over", r == [(2, 1, 1, True)], r)
+r = run("select * from show_up_overview()", O)
+check("organizer cannot see the hub show-up overview", is_err(r, "NOT_ALLOWED"), r)
+r = run("select said_going, came, walk_ins, self_checked_in from show_up_overview() where event_id=%s", A, args=(ED,))
+check("admin sees show-up numbers per past event", r == [(2, 1, 3, 3)], r)
+r = run("select count(*) from show_up_overview() where event_id=%s", A, args=(ED_FUT,))
+check("future events are not in the overview", r == [(0,)], r)
+
 print(f"\n{fails} failing checks")
 sys.exit(1 if fails else 0)

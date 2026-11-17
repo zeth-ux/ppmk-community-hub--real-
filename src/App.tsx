@@ -20,6 +20,8 @@ const EventDetailPage = lazy(() => import('./pages/EventDetailPage'))
 const MePage = lazy(() => import('./pages/MePage'))
 const OrganizerPage = lazy(() => import('./pages/OrganizerPage'))
 const CheckInPage = lazy(() => import('./pages/CheckInPage'))
+const DoorPage = lazy(() => import('./pages/DoorPage'))
+const HerePage = lazy(() => import('./pages/HerePage'))
 const ClubsPage = lazy(() => import('./pages/ClubsPage'))
 const ExplorePage = lazy(() => import('./pages/ExplorePage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
@@ -76,6 +78,12 @@ export default function App() {
                 path="/checkin/:code"
                 element={<RequireAuth><RequireRole role="organizer"><CheckInPage /></RequireRole></RequireAuth>}
               />
+              {/* Door screen: one QR for the whole event; students scan it themselves */}
+              <Route
+                path="/organizer/door/:id"
+                element={<RequireAuth><RequireRole role="organizer"><DoorPage /></RequireRole></RequireAuth>}
+              />
+              <Route path="/here/:id" element={<RequireAuth><HerePage /></RequireAuth>} />
               <Route
                 path="/admin"
                 element={<RequireAuth><RequireRole role="admin"><AdminPage /></RequireRole></RequireAuth>}

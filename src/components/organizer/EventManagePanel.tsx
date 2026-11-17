@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Camera,
+  DoorOpen,
   Download,
   ExternalLink,
   Pencil,
@@ -23,8 +24,9 @@ import {
 } from '../../lib/format'
 import type { Attendee, HubEvent, RsvpStatus } from '../../lib/types'
 import { useLoader } from '../../lib/useLoader'
-import { ErrorBox, Spinner, buttonSecondary, card } from '../ui'
+import { ErrorBox, Spinner, buttonPrimary, buttonSecondary, card } from '../ui'
 import FeedbackPanel from './FeedbackPanel'
+import ShowUpPanel from './ShowUpPanel'
 import SharePanel from './SharePanel'
 
 type Filter = 'all' | RsvpStatus
@@ -178,7 +180,19 @@ export default function EventManagePanel({
           <Stat label="Can't go" value={counts.not_attending} />
           <Stat label="Checked in" value={counts.checkedIn} />
         </div>
+
+        {canCheckIn && event.event_date >= todayKst() && (
+          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">{t('door.openHint')}</p>
+            <Link to={`/organizer/door/${event.id}`} className={`${buttonPrimary} shrink-0`}>
+              <DoorOpen size={16} />
+              {t('door.open')}
+            </Link>
+          </div>
+        )}
       </section>
+
+      {event.event_date <= todayKst() && <ShowUpPanel eventId={event.id} refreshKey={counts.checkedIn} />}
 
       <SharePanel event={event} onSaved={onChanged} />
 
