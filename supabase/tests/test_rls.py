@@ -1,25 +1,34 @@
-"""Permission tests for supabase/migrations/0001_init.sql against a local
-Postgres that imitates Supabase (auth.users, auth.uid(), anon/authenticated)."""
+"""Permission tests for supabase/migrations/*.sql against a LOCAL Postgres that
+imitates Supabase (auth.users, auth.uid(), anon/authenticated roles).
+
+Needs: PostgreSQL 15+ with `psql` on PATH, and `pip install psycopg2-binary`.
+Connection: PGHOST (default localhost), PGPORT (default 5432), PGPASSWORD for the
+`postgres` user. It creates and DROPS a database called `ppmk_hub_test`, nothing else.
+Never point this at the real Supabase database.
+See DEVELOPMENT.md → "Database permission tests"."""
 import glob, os, subprocess, sys, uuid
 import psycopg2
 
-DSN = dict(host=os.environ.get("PGHOST", "/home/claude/pgtest"), port=int(os.environ.get("PGPORT", 5499)), user="postgres")
+DSN = dict(host=os.environ.get("PGHOST", "localhost"), port=int(os.environ.get("PGPORT", 5432)), user="postgres")
+TEST_DB = "ppmk_hub_test"
+if "supabase" in DSN["host"]:
+    sys.exit("Refusing to run against a Supabase server. Use a local Postgres.")
 MIGRATIONS = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "migrations", "*.sql")))
 # MODE=new  -> Supabase 2026 behaviour: no automatic table grants
 # MODE=old  -> older projects: automatic grants to anon/authenticated
 MODE = os.environ.get("MODE", "new")
 
-subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", "drop database if exists hub"], check=True)
-subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", "create database hub"], check=True)
+subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", f"drop database if exists {TEST_DB}"], check=True)
+subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-qc", f"create database {TEST_DB}"], check=True)
 mock = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mock_supabase.sql")
 extra = [] if MODE == "new" else [os.path.join(os.path.dirname(os.path.abspath(__file__)), "mock_old_default_grants.sql")]
 for f in [mock, *extra, *MIGRATIONS]:
-    r = subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-d", "hub", "-q", "-v", "ON_ERROR_STOP=1", "-f", f], capture_output=True, text=True)
+    r = subprocess.run(["psql", "-h", DSN["host"], "-p", str(DSN["port"]), "-U", "postgres", "-d", TEST_DB, "-q", "-v", "ON_ERROR_STOP=1", "-f", f], capture_output=True, text=True)
     if r.returncode:
         print(r.stderr); sys.exit("migration failed")
 print(f"migrations applied cleanly (mode={MODE}): {[os.path.basename(m) for m in MIGRATIONS]}")
 
-conn = psycopg2.connect(dbname="hub", **DSN)
+conn = psycopg2.connect(dbname=TEST_DB, **DSN)
 conn.autocommit = True
 fails = 0
 
@@ -861,6 +870,27 @@ check("others cannot delete a listing", r == 0, r)
 r = run("delete from market_listings where id=%s", A, args=(L2,))
 check("admin removes a listing (photos and reports go with it)", r == 1, r)
 check("listing photos deleted with the listing", run("select count(*) from photos where listing_id=%s", role=None, args=(L2,)) == [(0,)])
+
+# ---------- Link fields only take web links (0012) ----------
+LK = new_user("links@x.com"); complete(LK, "2024901", 2024)
+bad_app = """insert into club_applications (club_name, category, description, documents)
+             values ('Link Club', 'Social', 'A club for testing which links are accepted.', %s::jsonb) returning id"""
+r = run(bad_app, LK, args=('{"constitution":"javascript:alert(1)"}',))
+check("club application refuses a javascript: document link", is_err(r, "documents_are_links"), r)
+r = run(bad_app, LK, args=('{"constitution":"data:text/html,hi"}',))
+check("club application refuses a data: document link", is_err(r, "documents_are_links"), r)
+r = run(bad_app, LK, args=('{"constitution": 5}',))
+check("club application refuses a non-text document value", is_err(r, "documents_are_links"), r)
+LKAPP = run(bad_app, LK, args=('{"constitution":"https://drive.google.com/x","member_list":""}',))
+check("club application accepts https and empty document links", not is_err(LKAPP) and LKAPP[0][0] is not None, LKAPP)
+r = run("update club_applications set documents='{\"constitution\":\"javascript:x\"}' where applicant_id=auth.uid()", LK)
+check("editing an application cannot add a bad link", is_err(r, "documents_are_links"), r)
+r = run("update clubs set join_url='javascript:alert(1)' where id=%s", A, args=(CLUB,))
+check("club join link refuses javascript:", is_err(r, "join_url_is_link"), r)
+r = run("update clubs set join_url='https://open.kakao.com/o/abc' where id=%s", A, args=(CLUB,))
+check("club join link accepts https", r == 1, r)
+r = run("update clubs set join_url='' where id=%s", A, args=(CLUB,))
+check("club join link can be cleared", r == 1, r)
 
 print(f"\n{fails} failing checks")
 sys.exit(1 if fails else 0)

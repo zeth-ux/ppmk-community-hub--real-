@@ -32,11 +32,16 @@ Everything here is on free plans. Nothing costs money.
    - `0009_event_reminders.sql`: "your event is tomorrow" emails (see section 8) and an
      on/off switch on the Me page. Safe to run before the Gmail is ready: nothing is
      sent until section 8 is done.
+   - `0010_checkin_confirm.sql`: only the event's creator (or an admin) can check people
+     in, and a QR scan asks first when something looks wrong (another day, not "Going").
    - `0011_marketplace.sql`: **Explore → Market**: members sell or give away preloved
      items, and seniors pass textbooks to juniors ("Pass the Book"). The seller's contact
      stays hidden until someone presses "I'm interested". Listing photos use the same
      admin approval as other photos (**Admin → Photos to review**); reported listings
      show up for admins at the top of the Market tab. No new keys or Vercel settings.
+   - `0012_link_checks.sql`: club "Join" links and club application documents must be
+     real `https://` links. Existing rows are left as they are; only new or edited ones
+     are checked. Safe to run at any time.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 

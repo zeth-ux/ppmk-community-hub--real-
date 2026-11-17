@@ -166,6 +166,8 @@ export function friendlyError(error: unknown): string {
     return translateNow('err.marketAlreadyReported')
   if (message.includes('market_listings_price'))
     return translateNow('err.marketPrice')
+  if (message.includes('join_url_is_link') || message.includes('documents_are_links'))
+    return translateNow('err.linkFormat')
   if (message.includes('MEMBERS_ONLY'))
     return translateNow('err.membersOnly')
   if (message.includes('LAST_PRESIDENT'))
