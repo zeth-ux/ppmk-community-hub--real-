@@ -627,3 +627,46 @@ export type CheckInResult = {
 }
 
 export type CheckInProblem = 'NOT_TODAY' | 'NOT_GOING'
+
+// ---------- Door check-in & show-up numbers (0013) ----------
+
+/** The code on the organizer's door screen. It changes every minute. */
+export type DoorCode = {
+  code: string
+  /** Seconds until the next code. */
+  seconds_left: number
+  event_date: string
+  /** Codes are only accepted on the event day (Korea time). */
+  is_today: boolean
+}
+
+export type SelfCheckInStatus = 'CHECKED_IN' | 'ALREADY' | 'BAD_CODE' | 'TOO_MANY_TRIES'
+
+export type SelfCheckInResult = {
+  status: SelfCheckInStatus
+  event_title: string
+  checked_in_at: string | null
+  /** Came without a "Going" answer beforehand (now marked Going). */
+  walk_in: boolean
+}
+
+/** For one event. Walk-ins are not part of said_going / came. */
+export type ShowUp = {
+  said_going: number
+  came: number
+  /** Said Going but didn't come. 0 until the event day is over. */
+  no_shows: number
+  walk_ins: number
+  self_checked_in: number
+  event_over: boolean
+}
+
+export type ShowUpRow = {
+  event_id: string
+  title: string
+  event_date: string
+  said_going: number
+  came: number
+  walk_ins: number
+  self_checked_in: number
+}

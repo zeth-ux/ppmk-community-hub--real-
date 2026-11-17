@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Backpack,
   CalendarClock,
   CheckCircle2,
   Clock,
+  DoorOpen,
   MapPin,
   Pencil,
   QrCode as QrIcon,
@@ -34,7 +35,7 @@ import Breadcrumbs from '../components/Breadcrumbs'
 import FeedbackCard from '../components/FeedbackCard'
 import QrCode from '../components/QrCode'
 import { usePageMeta } from '../lib/usePageMeta'
-import { ErrorBox, Spinner, buttonSecondary, card, inputClass } from '../components/ui'
+import { ErrorBox, Spinner, buttonPrimary, buttonSecondary, card, inputClass } from '../components/ui'
 
 const categoryTranslation: Record<string, TranslationKey> = {
   Sports: 'category.sports',
@@ -78,6 +79,8 @@ export default function EventDetailPage() {
   const [message, setMessage] = useState('')
   const [rsvpError, setRsvpError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [doorCode, setDoorCode] = useState('')
+  const navigate = useNavigate()
 
   if (loading) return <Spinner />
   if (error) return <ErrorBox>{error}</ErrorBox>
@@ -104,6 +107,8 @@ export default function EventDetailPage() {
   // Check-in QR for people coming, until they've been checked in.
   const showQr =
     mine !== null && mine.status !== 'not_attending' && Boolean(mine.checkin_code) && !mine.checked_in_at && !isPast(event)
+  // "At the door?": type the code from the organizer's door screen (event day only).
+  const showDoor = event.event_date === todayKst() && !mine?.checked_in_at
   const showFeedback =
     mine !== null && (mine.status === 'attending' || mine.checked_in_at !== null) && event.event_date <= todayKst()
 
@@ -258,7 +263,37 @@ export default function EventDetailPage() {
         </div>
       </article>
 
+      {showDoor && (
+        <section className={`${card} p-5 sm:p-7`} aria-labelledby="door-heading">
+          <h2 id="door-heading" className="flex items-center gap-2 text-lg font-bold">
+            <DoorOpen size={20} className="text-primary" /> {t('here.atDoorTitle')}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{t('here.atDoorBody')}</p>
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (doorCode.length === 6) navigate(`/here/${event.id}?c=${doorCode}`)
+            }}
+          >
+            <input
+              value={doorCode}
+              onChange={(e) => setDoorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="123456"
+              aria-label={t('here.typeCode')}
+              className={`${inputClass} mt-0 font-mono text-lg tracking-widest`}
+            />
+            <button type="submit" disabled={doorCode.length !== 6} className={`${buttonPrimary} shrink-0`}>
+              {t('here.submit')}
+            </button>
+          </form>
+        </section>
+      )}
+
       {showFeedback && <FeedbackCard eventId={event.id} />}
+
 
       {showQr && (
         <section className={`${card} p-5 sm:p-7`} aria-labelledby="qr-heading">

@@ -153,6 +153,7 @@ Tips:
 | `0010_checkin_confirm.sql` | Only the event's creator checks people in; QR asks first when something looks wrong |
 | `0011_marketplace.sql` | Marketplace listings, interests, reports |
 | `0012_link_checks.sql` | Club join links and application documents must be `https://` links |
+| `0013_self_checkin.sql` | Door check-in (`door_code`, `self_check_in`), walk-ins, show-up numbers (`event_show_up`, `show_up_overview`) |
 
 All database calls from the app go through **`src/lib/api.ts`**.
 

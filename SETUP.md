@@ -42,6 +42,12 @@ Everything here is on free plans. Nothing costs money.
    - `0012_link_checks.sql`: club "Join" links and club application documents must be
      real `https://` links. Existing rows are left as they are; only new or edited ones
      are checked. Safe to run at any time.
+   - `0013_self_checkin.sql`: **door check-in**. The event's organizer opens
+     Organize → event → **Door check-in screen** and shows one QR (it changes every
+     minute); students scan it with their own phone, or type its 6-digit code on the
+     event page, and are checked in. People who come without saying "Going" are
+     counted as walk-ins. Also adds the **Who showed up** numbers (Organize page) and
+     **Show-up across past events** (Admin page). Run it before the website update.
 3. You should see "Success. No rows returned". Check **Table Editor**: you now have
    `profiles`, `events`, `rsvps`, `event_invites`, `clubs` (with 4 starter clubs).
 

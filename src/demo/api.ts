@@ -42,6 +42,10 @@ import type {
   EventFeedbackReport,
   EventInput,
   FeedbackOverview,
+  DoorCode,
+  SelfCheckInResult,
+  ShowUp,
+  ShowUpRow,
   HubEvent,
   HubStats,
   Member,
@@ -285,6 +289,60 @@ export async function getEventFeedback(_eventId: string): Promise<EventFeedbackR
 
 export async function getFeedbackOverview(): Promise<FeedbackOverview> {
   return wait({ responses: 38, average: 4.31, events_rated: 4 })
+}
+
+// ---------- Door check-in & show-up numbers ----------
+
+// A fake code that changes every minute, like the real one.
+const demoDoorCode = (minute = Math.floor(Date.now() / 60000)) => String((minute * 7919) % 1000000).padStart(6, '0')
+const selfCheckIns = new Set<string>()
+
+export async function getDoorCode(eventId: string): Promise<DoorCode> {
+  const event = demoEvents.find((e) => e.id === eventId)
+  if (!event) throw new Error('NOT_EVENT_ORGANIZER')
+  return wait({
+    code: demoDoorCode(),
+    seconds_left: 60 - (Math.floor(Date.now() / 1000) % 60),
+    event_date: event.event_date,
+    is_today: event.event_date === todayKst(),
+  })
+}
+
+// The demo skips the "event day only" rule so every screen can be previewed.
+export async function selfCheckIn(eventId: string, code: string): Promise<SelfCheckInResult> {
+  const event = demoEvents.find((e) => e.id === eventId)
+  if (!event) throw new Error('NOT_ALLOWED')
+  const rsvp = demoRsvps.find((r) => r.event_id === eventId)
+  if (rsvp?.checked_in_at) {
+    return wait({ status: 'ALREADY', event_title: event.title, checked_in_at: rsvp.checked_in_at, walk_in: false })
+  }
+  const minute = Math.floor(Date.now() / 60000)
+  const ok = Array.from({ length: 11 }, (_, back) => demoDoorCode(minute - back)).includes(code.replace(/\D/g, ''))
+  if (!ok) return wait({ status: 'BAD_CODE', event_title: event.title, checked_in_at: null, walk_in: false })
+  const walkIn = rsvp?.status !== 'attending'
+  const at = stamp()
+  if (rsvp) Object.assign(rsvp, { status: 'attending', checked_in_at: at })
+  selfCheckIns.add(eventId)
+  return wait({ status: 'CHECKED_IN', event_title: event.title, checked_in_at: at, walk_in: walkIn })
+}
+
+export async function getShowUp(eventId: string): Promise<ShowUp> {
+  const event = demoEvents.find((e) => e.id === eventId)
+  const over = Boolean(event && event.event_date < todayKst())
+  const came = Object.entries(checkIns).filter(([k, v]) => k.startsWith(`${eventId}:`) && v).length
+  return wait(
+    over
+      ? { said_going: 24, came: 19, no_shows: 5, walk_ins: 3, self_checked_in: 17, event_over: true }
+      : { said_going: 17, came: came + (selfCheckIns.has(eventId) ? 1 : 0), no_shows: 0, walk_ins: 0, self_checked_in: selfCheckIns.has(eventId) ? 1 : 0, event_over: false },
+  )
+}
+
+export async function listShowUpOverview(): Promise<ShowUpRow[]> {
+  return wait([
+    { event_id: 'evt-past-1', title: 'Futsal Night', event_date: '2026-11-08', said_going: 24, came: 19, walk_ins: 3, self_checked_in: 17 },
+    { event_id: 'evt-past-2', title: 'Welcome Dinner', event_date: '2026-10-25', said_going: 41, came: 36, walk_ins: 5, self_checked_in: 0 },
+    { event_id: 'evt-past-3', title: 'Study Group Night', event_date: '2026-10-14', said_going: 12, came: 8, walk_ins: 1, self_checked_in: 0 },
+  ])
 }
 
 // ---------- Members & admin ----------

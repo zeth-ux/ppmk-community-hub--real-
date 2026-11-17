@@ -9,6 +9,7 @@ import type {
   AppRole,
   Attendee,
   CheckInResult,
+  DoorCode,
   Club,
   ClubApplication,
   ClubApplicationInput,
@@ -16,6 +17,9 @@ import type {
   EventFeedback,
   EventFeedbackReport,
   FeedbackOverview,
+  SelfCheckInResult,
+  ShowUp,
+  ShowUpRow,
   ClubMemberCount,
   ClubMemberRow,
   ClubMembership,
@@ -326,6 +330,40 @@ export async function checkInByCode(code: string, force = false): Promise<CheckI
   const args = force ? { p_code: code, p_force: true } : { p_code: code }
   const rows = must(await supabase.rpc('check_in_by_code', args)) as CheckInResult[]
   return rows[0]
+}
+
+// ---------- Door check-in & show-up numbers ----------
+
+/** Event creator / admin: the code for the door screen (changes every minute). */
+export async function getDoorCode(eventId: string): Promise<DoorCode> {
+  const rows = must(await supabase.rpc('door_code', { p_event_id: eventId })) as DoorCode[]
+  return rows[0]
+}
+
+/** Students: check myself in with the code from the door screen. */
+export async function selfCheckIn(eventId: string, code: string): Promise<SelfCheckInResult> {
+  const rows = must(
+    await supabase.rpc('self_check_in', { p_event_id: eventId, p_code: code }),
+  ) as SelfCheckInResult[]
+  return rows[0]
+}
+
+/** Organizers: said Going vs came, walk-ins and no-shows for one event. */
+export async function getShowUp(eventId: string): Promise<ShowUp> {
+  const row = (must(await supabase.rpc('event_show_up', { p_event_id: eventId })) as ShowUp[])[0]
+  return {
+    said_going: Number(row?.said_going ?? 0),
+    came: Number(row?.came ?? 0),
+    no_shows: Number(row?.no_shows ?? 0),
+    walk_ins: Number(row?.walk_ins ?? 0),
+    self_checked_in: Number(row?.self_checked_in ?? 0),
+    event_over: Boolean(row?.event_over),
+  }
+}
+
+/** Admins: show-up numbers for every past event (for the pilot report). */
+export async function listShowUpOverview(): Promise<ShowUpRow[]> {
+  return must(await supabase.rpc('show_up_overview')) as ShowUpRow[]
 }
 
 // ---------- Members & admin ----------
