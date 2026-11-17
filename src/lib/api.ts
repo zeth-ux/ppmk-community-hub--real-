@@ -646,6 +646,14 @@ export async function listOpportunities(): Promise<Opportunity[]> {
   return must(result) as Opportunity[]
 }
 
+/** One opportunity, for its own page. Null if it doesn't exist or you can't see it
+ *  (published ones are public; a suggestion only to its suggester and organizers). */
+export async function getOpportunity(id: string): Promise<Opportunity | null> {
+  // A mistyped link isn't an error, just "not found".
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null
+  return must(await supabase.from('opportunities').select('*').eq('id', id).maybeSingle()) as Opportunity | null
+}
+
 export async function saveOpportunity(input: OpportunityInput, id?: string): Promise<void> {
   must(
     id

@@ -21,6 +21,7 @@ const MePage = lazy(() => import('./pages/MePage'))
 const OrganizerPage = lazy(() => import('./pages/OrganizerPage'))
 const CheckInPage = lazy(() => import('./pages/CheckInPage'))
 const DoorPage = lazy(() => import('./pages/DoorPage'))
+const OpportunityPage = lazy(() => import('./pages/OpportunityPage'))
 const HerePage = lazy(() => import('./pages/HerePage'))
 const ClubsPage = lazy(() => import('./pages/ClubsPage'))
 const ExplorePage = lazy(() => import('./pages/ExplorePage'))
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="/discuss/new" element={<RequireAuth allow="account"><DiscussNewPage /></RequireAuth>} />
               <Route path="/discuss/:id" element={<RequireAuth allow="guest"><DiscussPostPage /></RequireAuth>} />
               <Route path="/explore" element={<RequireAuth allow="guest"><ExplorePage /></RequireAuth>} />
+              <Route path="/explore/:id" element={<RequireAuth allow="guest"><OpportunityPage /></RequireAuth>} />
               <Route path="/me" element={<RequireAuth allow="account"><MePage /></RequireAuth>} />
               <Route path="/ask" element={<RequireAuth><AskPage /></RequireAuth>} />
 
