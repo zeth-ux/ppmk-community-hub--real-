@@ -19,7 +19,7 @@ AI+X course final project · 2026.
 | Login | Email magic link + one-time code (no passwords) |
 | AI | Google Gemini API (free tier), via a server function in `api/ai.ts` |
 
-> **New to the team? Start with [TEAM_BRIEF.md](TEAM_BRIEF.md).**
+> **New to the team? Start with [TEAM_BRIEF.md](TEAM_BRIEF.md), then [DEVELOPMENT.md](DEVELOPMENT.md) for running and testing locally.**
 
 ## Getting started
 
