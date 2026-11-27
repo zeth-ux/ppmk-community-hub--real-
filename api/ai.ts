@@ -142,7 +142,8 @@ function isRealDate(value: unknown): value is string {
 
 function toTime(value: unknown): string | null {
   if (typeof value !== 'string') return null
-  const m = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
+  // "20:30", "20:30:00", and the Malaysian way of writing it, "20.30".
+  const m = value.trim().match(/^(\d{1,2})[:.](\d{2})(?::\d{2})?$/)
   if (!m) return null
   const h = Number(m[1])
   const min = Number(m[2])
@@ -307,7 +308,7 @@ The notes may mix English, Malay (including short forms and slang such as "ptg" 
 Rules:
 - Today is ${weekdayOf(today)}, ${today} (Korea time). Turn relative dates ("this friday", "esok", "next sat", "다음 주 토요일") into YYYY-MM-DD. A weekday name alone means its next occurrence on or after today. "next <weekday>" means the one in the following week.
 - Malay custom: "malam <day>" is the evening BEFORE that day. "malam jumaat" = THURSDAY night, "malam sabtu" = Friday night, "malam minggu"/"malam ahad" = Saturday night. ("malam ni" = tonight.)
-- Times are 24-hour HH:MM. "8pm" = 20:00, "ptg 3" = 15:00, "mlm 9" = 21:00, "lepas isyak" ≈ 20:30 (only if nothing more precise is given).
+- Times are 24-hour HH:MM. "8pm" = 20:00, "ptg 3" = 15:00, "mlm 9" = 21:00, "8.30mlm" = 20:30, "3.15ptg" = 15:15, "10pg" = 10:00, "lepas isyak" ≈ 20:30 (only if nothing more precise is given). Malaysians write minutes after a dot: "8.30" is 8:30, not a date.
 - NEVER invent details. If something is not in the notes, use null (dates, times, capacity) or "" (text) and put the field name in "missing". Do not guess a capacity, end time, deadline or location.
 - title: short and catchy, in English, Title Case, max 60 characters.
 - category: exactly one of ${CATEGORIES.join(', ')}. Sports for games/futsal/badminton; Social for dinners, gatherings, BBQ, welcome parties; Academic for study groups, exam prep, workshops on coursework; Career for talks about jobs, internships, alumni, CVs; Cultural for Malaysian festivals, food or heritage (Hari Raya, Merdeka, Deepavali, CNY); Religious for prayers, usrah, tazkirah, religious talks, iftar.

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
-import { useLanguage, type TranslationKey } from '../context/LanguageContext'
+import { dateLocale, useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   createClubPost,
   decideClubRequest,
@@ -676,7 +676,7 @@ function ActivityTab({
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900">
                 <span className="flex items-center gap-1.5">
                   <CalendarClock size={15} />
-                  {new Date(post.meeting_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  {new Date(post.meeting_at).toLocaleString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {post.location && <span className="flex items-center gap-1.5"><MapPin size={15} /> {post.location}</span>}
               </div>
