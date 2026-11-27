@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import {
   CalendarDays,
   Check,
+  ChevronRight,
   Clock,
   ExternalLink,
   Lightbulb,
@@ -19,6 +20,14 @@ import { useLanguage, type TranslationKey } from '../context/LanguageContext'
 import { deleteOpportunity, listOpportunities, saveOpportunity } from '../lib/api'
 import { deadlineLabel, friendlyError, todayKst } from '../lib/format'
 import {
+  OPPORTUNITY_KIND_KEYS,
+  OPPORTUNITY_SCOPE_KEYS,
+  canTeamUp,
+  dateRange,
+  deadlineText,
+  teamUpHref,
+} from '../components/explore/shared'
+import {
   OPPORTUNITY_KINDS,
   OPPORTUNITY_SCOPES,
   type Opportunity,
@@ -32,24 +41,6 @@ import { EmptyState, ErrorBox, Spinner, buttonPrimary, buttonSecondary, card, in
 import MarketTab from '../components/market/MarketTab'
 
 type When = 'upcoming' | 'closing' | 'past'
-
-const OPPORTUNITY_KIND_KEYS: Record<OpportunityKind, TranslationKey> = {
-  conference: 'explore.kindConference',
-  culture: 'explore.kindCulture',
-  competition: 'explore.kindCompetition',
-  scholarship: 'explore.kindScholarship',
-  volunteer: 'explore.kindVolunteer',
-  career: 'explore.kindCareer',
-  sports: 'explore.kindSports',
-  other: 'explore.kindOther',
-}
-
-const OPPORTUNITY_SCOPE_KEYS: Record<OpportunityScope, TranslationKey> = {
-  korea: 'explore.scopeKorea',
-  asia: 'explore.scopeAsia',
-  global: 'explore.scopeGlobal',
-  online: 'explore.scopeOnline',
-}
 
 const EMPTY: OpportunityInput = {
   title: '',
@@ -105,6 +96,16 @@ function OpportunitiesView() {
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<Opportunity | 'new' | null>(null)
   const [notice, setNotice] = useState('')
+
+  // "Edit" on an opportunity's own page links here with ?edit=<id>.
+  const [params, setParams] = useSearchParams()
+  const editId = params.get('edit')
+  const toEdit = editId && isOrganizer ? data?.find((o) => o.id === editId) : undefined
+  const shownForm = editing ?? toEdit ?? null
+  const closeForm = () => {
+    setEditing(null)
+    if (editId) setParams({}, { replace: true })
+  }
 
   const today = todayKst()
   const all = data ?? []
@@ -168,32 +169,33 @@ function OpportunitiesView() {
         </div>
       </section>
 
-      {editing && (
+      {shownForm && (
         <OpportunityForm
-          initial={editing === 'new' ? null : editing}
+          key={shownForm === 'new' ? 'new' : shownForm.id}
+          initial={shownForm === 'new' ? null : shownForm}
           canPublish={isOrganizer}
           onDone={async () => {
             setNotice(
-              editing === 'new'
+              shownForm === 'new'
                 ? isOrganizer
                   ? t('explore.listingPublished')
                   : t('explore.suggestionSent')
                 : t('explore.listingSaved'),
             )
-            setEditing(null)
+            closeForm()
             await reload()
           }}
-          onCancel={() => setEditing(null)}
+          onCancel={closeForm}
         />
       )}
 
-      {notice && !editing && (
+      {notice && !shownForm && (
         <p role="status" className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
           <Check size={17} /> {notice}
         </p>
       )}
 
-      {isOrganizer && suggestions.length > 0 && !editing && (
+      {isOrganizer && suggestions.length > 0 && !shownForm && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <p className="font-bold text-amber-900">
             {suggestions.length} {t(suggestions.length === 1 ? 'explore.suggestionSingular' : 'explore.suggestionPlural')}
@@ -334,37 +336,6 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   )
 }
 
-function formatOpportunityDate(date: string, language: string, style: 'short' | 'long' = 'short') {
-  const locale = language === 'ms' ? 'ms-MY' : language === 'ko' ? 'ko-KR' : 'en-GB'
-  return new Date(`${date}T00:00:00`).toLocaleDateString(
-    locale,
-    style === 'long'
-      ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
-      : { weekday: 'short', day: 'numeric', month: 'short' },
-  )
-}
-
-function dateRange(o: Opportunity, language: string, t: (key: TranslationKey) => string) {
-  if (!o.start_date) return t('explore.dateTba')
-  if (!o.end_date || o.end_date === o.start_date) return formatOpportunityDate(o.start_date, language, 'long')
-  return `${formatOpportunityDate(o.start_date, language)} – ${formatOpportunityDate(o.end_date, language)}`
-}
-
-function deadlineText(
-  date: string | null,
-  due: ReturnType<typeof deadlineLabel>,
-  language: string,
-  t: (key: TranslationKey) => string,
-) {
-  if (!date || !due) return ''
-  if (due.past) return t('explore.deadlinePassed')
-  const days = Math.round((new Date(`${date}T00:00:00`).getTime() - new Date(`${todayKst()}T00:00:00`).getTime()) / 86400000)
-  if (days === 0) return t('explore.closesToday')
-  if (days === 1) return t('explore.closesTomorrow')
-  if (days <= 14) return `${t('explore.closesIn')} ${days} ${t('explore.days')}`
-  return `${t('explore.closes')} ${formatOpportunityDate(date, language)}`
-}
-
 function OpportunityCard({
   o,
   t,
@@ -386,30 +357,23 @@ function OpportunityCard({
   const scope = OPPORTUNITY_SCOPES[o.scope]
   const due = deadlineLabel(o.apply_deadline)
   const dueText = deadlineText(o.apply_deadline, due, language, t)
-  const teamCategory = o.kind === 'competition' ? 'hackathon' : 'activities'
-  const teamHref = `/discuss/new?c=${teamCategory}&title=${encodeURIComponent(t('explore.teamTitle').replace('{title}', o.title))}${
-    o.url ? `&link=${encodeURIComponent(o.url)}` : ''
-  }${o.apply_deadline ? `&deadline=${o.apply_deadline}` : ''}`
 
+  // The whole card opens the opportunity's own page; the buttons sit above
+  // that link (relative z-10) so they still do their own thing.
   return (
-    <article className={`${card} relative flex flex-col p-5 transition`}>
+    <article className={`${card} relative flex flex-col p-5 transition hover:border-primary/40 hover:shadow-md`}>
+      <Link to={`/explore/${o.id}`} className="absolute inset-0 rounded-2xl" aria-label={o.title} />
       <div className={`flex flex-wrap items-center gap-2 text-xs font-semibold ${canEdit ? 'pr-8' : ''}`}>
         <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-800">{kind.emoji} {t(OPPORTUNITY_KIND_KEYS[o.kind])}</span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{scope.emoji} {t(OPPORTUNITY_SCOPE_KEYS[o.scope])}</span>
         {canEdit && (
-          <button onClick={onEdit} aria-label={`${t('explore.edit')} ${o.title}`} className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button onClick={onEdit} aria-label={`${t('explore.edit')} ${o.title}`} className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
             <Pencil size={14} />
           </button>
         )}
       </div>
 
-      <h2 className="mt-3 text-lg font-bold leading-snug">
-        {o.url ? (
-          <a href={o.url} target="_blank" rel="noreferrer" className="hover:text-primary">{o.title}</a>
-        ) : (
-          o.title
-        )}
-      </h2>
+      <h2 className="mt-3 text-lg font-bold leading-snug">{o.title}</h2>
       {o.organizer && <p className="mt-0.5 text-sm font-medium text-slate-500">{o.organizer}</p>}
 
       <div className="mt-3 space-y-1.5 text-sm text-slate-600">
@@ -422,26 +386,29 @@ function OpportunityCard({
         )}
       </div>
 
-      {o.description && <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{o.description}</p>}
+      {o.description && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600">{o.description}</p>}
 
-      <div className="mt-auto flex flex-wrap gap-2 pt-4">
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         {o.url && (
-          <a href={o.url} target="_blank" rel="noreferrer" className={`${buttonPrimary} px-4 py-2.5`}>
-            {t('explore.details')} <ExternalLink size={15} />
+          <a href={o.url} target="_blank" rel="noreferrer" className={`${buttonPrimary} relative z-10 px-4 py-2.5`}>
+            {t('explore.register')} <ExternalLink size={15} />
           </a>
         )}
-        {(o.kind === 'competition' || o.kind === 'conference' || o.kind === 'volunteer' || o.kind === 'culture') &&
+        {canTeamUp(o) &&
           (isMember ? (
-            <Link to={teamHref} className={`${buttonSecondary} px-4 py-2.5`}>
+            <Link to={teamUpHref(o, t)} className={`${buttonSecondary} relative z-10 px-4 py-2.5`}>
               <Users size={15} /> {t('explore.findTeammates')}
             </Link>
           ) : (
             !signedIn && (
-              <Link to="/login?next=/explore" className={`${buttonSecondary} px-4 py-2.5`}>
+              <Link to="/login?next=/explore" className={`${buttonSecondary} relative z-10 px-4 py-2.5`}>
                 <Users size={15} /> {t('explore.goWithOthers')}
               </Link>
             )
           ))}
+        <span className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-primary">
+          {t('explore.readMore')} <ChevronRight size={15} />
+        </span>
       </div>
     </article>
   )
@@ -551,12 +518,13 @@ function OpportunityForm({
           <input type="date" value={form.apply_deadline ?? ''} onChange={(e) => set('apply_deadline', e.target.value)} className={inputClass} />
         </label>
         <label className="text-sm font-medium">
-          {t('explore.link')}
+          {t('explore.registerLink')}
           <input type="url" value={form.url ?? ''} onChange={(e) => set('url', e.target.value)} placeholder="https://" className={inputClass} />
+          <span className="mt-1 block text-xs font-normal text-slate-500">{t('explore.registerLinkHint')}</span>
         </label>
         <label className="text-sm font-medium sm:col-span-2">
-          {t('explore.shortDescription')}
-          <textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={3000} className={inputClass} />
+          {t('explore.detailsLabel')}
+          <textarea rows={6} value={form.description} onChange={(e) => set('description', e.target.value)} maxLength={3000} placeholder={t('explore.detailsPlaceholder')} className={inputClass} />
         </label>
         {canPublish && (
           <label className="text-sm font-medium">

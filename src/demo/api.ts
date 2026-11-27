@@ -734,6 +734,11 @@ export async function listOpportunities(): Promise<Opportunity[]> {
   )
 }
 
+export async function getOpportunity(id: string): Promise<Opportunity | null> {
+  // Same visibility as the list: published, or yours, or you're an organizer.
+  return (await listOpportunities()).find((o) => o.id === id) ?? null
+}
+
 export async function saveOpportunity(input: OpportunityInput, id?: string): Promise<void> {
   if (id) {
     const o = demoOpportunities.find((x) => x.id === id)
