@@ -314,12 +314,18 @@ export default function EventManagePanel({
       </section>
 
       <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
+        <h3 className="font-bold text-red-800">Delete this event</h3>
+        <p className="mt-1 text-sm text-red-700">
+          Removes the event and all its RSVPs for everyone. This can't be undone.
+        </p>
+        {/* Outlined, not filled: a filled red button with white text is hard to read in dark mode. */}
         <button
+          type="button"
           onClick={() => void handleDelete()}
-          className="inline-flex items-center gap-2 text-sm font-bold text-red-700"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-surface px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-100"
         >
           <Trash2 size={16} />
-          Delete this event
+          Delete event
         </button>
       </section>
     </div>
