@@ -3474,6 +3474,12 @@ export function translateNow(key: TranslationKey): string {
   return translations[readLanguage()][key]
 }
 
+/** Locale for dates in the person's language: "Ahad, 29 November" / "11월 29일 (일)". */
+// eslint-disable-next-line react-refresh/only-export-components
+export function dateLocale(language: Language = readLanguage()): string {
+  return language === 'ko' ? 'ko-KR' : language === 'ms' ? 'ms-MY' : 'en-GB'
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(readLanguage)
 

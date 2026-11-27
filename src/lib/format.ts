@@ -1,4 +1,4 @@
-import { translateNow } from '../context/LanguageContext'
+import { dateLocale, translateNow } from '../context/LanguageContext'
 import { FORUM_CATEGORIES } from './types'
 import type {
   Club,
@@ -26,7 +26,7 @@ export function formatDate(
   const d = new Date(`${date}T00:00:00`)
 
   return d.toLocaleDateString(
-    'en-GB',
+    dateLocale(),
     style === 'long'
       ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
       : { weekday: 'short', day: 'numeric', month: 'short' },
@@ -122,7 +122,7 @@ export function timeAgo(iso: string): string {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
   if (seconds < 86400 * 7) return `${Math.floor(seconds / 86400)}d ago`
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 /** Turns database / network errors into sentences a student can act on. */

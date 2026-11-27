@@ -252,6 +252,16 @@ test('normalizeExtract: deadline after event and end before start are dropped', 
   assert.equal(r.warnings.length, 2)
 })
 
+test('normalizeExtract accepts Malaysian dot times like 20.30', () => {
+  const r = normalizeExtract({
+    title: 'Solat Hajat', category: 'Religious', event_date: '2026-11-05', start_time: '20.30',
+    end_time: '21.45', location: 'Surau ERICA',
+  }, '2026-11-02')
+  assert.equal(r.event.start_time, '20:30')
+  assert.equal(r.event.end_time, '21:45')
+  assert.ok(!r.missing.includes('start_time'))
+})
+
 test('normalizeExtract warns about past dates', () => {
   const r = normalizeExtract({ title: 'Old Event', category: 'Social', event_date: '2026-01-01', start_time: '10:00', location: 'X' }, '2026-11-02')
   assert.ok(r.warnings.some((w) => w.includes('in the past')))

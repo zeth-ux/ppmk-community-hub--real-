@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
-import { useLanguage, type TranslationKey } from '../context/LanguageContext'
+import { dateLocale, useLanguage, type TranslationKey } from '../context/LanguageContext'
 import {
   deleteOrgCalendarItem,
   deleteOrgPerson,
@@ -689,7 +689,7 @@ function PhotoField({
 }
 
 function fmtRange(i: OrgCalendarItem) {
-  const d = (s: string, opts: Intl.DateTimeFormatOptions) => new Date(`${s}T00:00:00`).toLocaleDateString('en-GB', opts)
+  const d = (s: string, opts: Intl.DateTimeFormatOptions) => new Date(`${s}T00:00:00`).toLocaleDateString(dateLocale(), opts)
   if (!i.end_date || i.end_date === i.start_date) return d(i.start_date, { weekday: 'long', day: 'numeric', month: 'long' })
   return `${d(i.start_date, { day: 'numeric', month: 'short' })} – ${d(i.end_date, { day: 'numeric', month: 'short' })}`
 }
@@ -705,7 +705,7 @@ function CalendarSection({
   editing: boolean
   onChange: () => Promise<void>
 }) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const today = todayKst()
   const [showPast, setShowPast] = useState(false)
   const [editingItem, setEditingItem] = useState<OrgCalendarItem | 'new' | null>(null)
@@ -717,13 +717,13 @@ function CalendarSection({
   const months = useMemo(() => {
     const groups: [string, OrgCalendarItem[]][] = []
     for (const i of shown) {
-      const key = new Date(`${i.start_date}T00:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      const key = new Date(`${i.start_date}T00:00:00`).toLocaleDateString(dateLocale(language), { month: 'long', year: 'numeric' })
       const g = groups.find(([k]) => k === key)
       if (g) g[1].push(i)
       else groups.push([key, [i]])
     }
     return groups
-  }, [shown])
+  }, [shown, language])
 
   return (
     <>
@@ -789,7 +789,7 @@ function CalendarSection({
                     <li key={i.id} className="flex gap-4 py-4 sm:gap-6">
                       <div className="w-14 shrink-0 text-center sm:w-16">
                         <p className="font-display text-4xl text-gold sm:text-5xl">{date.getDate()}</p>
-                        <p className="text-xs font-semibold text-slate-500">{date.toLocaleDateString('en-GB', { weekday: 'short' })}</p>
+                        <p className="text-xs font-semibold text-slate-500">{date.toLocaleDateString(dateLocale(language), { weekday: 'short' })}</p>
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-2 text-xs font-semibold text-slate-500">
