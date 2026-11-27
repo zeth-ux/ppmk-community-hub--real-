@@ -31,13 +31,26 @@ import SharePanel from './SharePanel'
 
 type Filter = 'all' | RsvpStatus
 
+/** A cell that Excel and Google Sheets must keep as text. */
+type TextCell = { keepAsText: string }
+
+/**
+ * Excel reads "01044877101" as a number and drops the 0. Digits-only phones are
+ * written as ="01044877101" so the 0 stays. Only digits go in, so the formula
+ * can't run anything.
+ */
+function phoneCell(phone: string | null | undefined): string | TextCell {
+  const text = String(phone ?? '').trim()
+  return /^\d+$/.test(text) ? { keepAsText: text } : text
+}
+
 function toCsv(event: HubEvent, rows: Attendee[]): string {
   const header = [
     'Name', 'Student ID', 'Batch', 'Course', 'Residence', 'Phone', 'Email',
     'RSVP', 'Comment', 'Responded at', 'Checked in at',
   ]
   const body = rows.map((a) => [
-    a.full_name, a.student_id, a.batch, a.course, a.residence, a.phone, a.email,
+    a.full_name, a.student_id, a.batch, a.course, a.residence, phoneCell(a.phone), a.email,
     statusLabel(a.status), a.comment,
     new Date(a.responded_at).toLocaleString('en-GB', { timeZone: 'Asia/Seoul' }),
     a.checked_in_at
@@ -45,6 +58,9 @@ function toCsv(event: HubEvent, rows: Attendee[]): string {
       : '',
   ])
   const escape = (value: unknown) => {
+    if (value && typeof value === 'object' && 'keepAsText' in value) {
+      return `"=""${(value as TextCell).keepAsText}"""`
+    }
     let text = String(value ?? '')
     // Stop spreadsheet apps from treating a cell as a formula.
     if (/^[=+\-@]/.test(text)) text = `'${text}`
